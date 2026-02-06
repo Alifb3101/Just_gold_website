@@ -1,0 +1,120 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Desktop Vertical Thumbnail Scrollbar */
+.desktop-carousel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.desktop-carousel::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.desktop-carousel::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.desktop-carousel::-webkit-scrollbar-thumb:hover {
+  background: #C4A037;
+  background-clip: content-box;
+}
+
+/* Firefox scrollbar */
+.desktop-carousel {
+  scrollbar-width: thin;
+  scrollbar-color: #D4AF37 #f3f4f6;
+}
+
+/* Custom Scrollbar for Product Carousel */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #C4A037;
+}
+
+/* Tablet Landscape Product Image Sizing - Professional Premium Styling */
+@media (min-width: 768px) and (max-width: 1180px) and (orientation: landscape) {
+  .tablet-landscape-image {
+    width: 100% !important;
+    max-width: 700px !important;
+    height: 500px !important;
+    aspect-ratio: unset !important;
+    margin: 0 auto !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(212, 175, 55, 0.15) !important;
+    background: linear-gradient(135deg, #fefefe 0%, #f9f9f9 100%) !important;
+    border: 2px solid rgba(212, 175, 55, 0.2) !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+  
+  .tablet-landscape-image img,
+  .tablet-landscape-image video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+  }
+  
+  .tablet-landscape-container {
+    max-width: 1180px !important;
+    margin: 0 auto !important;
+    padding: 1.5rem !important;
+  }
+  
+  /* Horizontal thumbnail gallery below main image - LANDSCAPE ONLY */
+  .tablet-landscape-thumbnails {
+    display: flex !important;
+    gap: 0.75rem !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    max-width: 700px !important;
+    margin: 1rem auto 0 auto !important;
+    overflow-x: auto !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Desktop vertical carousel hidden on tablet landscape */
+  .desktop-carousel-container {
+    display: none !important;
+  }
+
+  /* Show horizontal layout for tablet landscape */
+  .tablet-landscape-layout {
+    display: block !important;
+  }
+}
+
+/* Keep tablet portrait unchanged */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .tablet-landscape-layout {
+    display: none !important;
+  }
+  
+  .desktop-carousel-container {
+    display: flex !important;
+  }
+}
+
+/* Firefox scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #D4AF37 #f3f4f6;
+}
