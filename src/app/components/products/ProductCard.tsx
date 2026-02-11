@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Heart, Star, ShoppingBag, Eye } from 'lucide-react';
 import { useApp } from '@/app/contexts/AppContext';
 import { motion } from 'motion/react';
@@ -13,13 +13,22 @@ interface ProductCardProps {
     rating: number;
     reviews: number;
     badge?: string;
+    slug?: string;
   };
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const { convertPrice } = useApp();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
+
+  const productSlug = useMemo(() => {
+    const normalized = (product.slug ?? product.name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+    return `${product.id}-${normalized}`;
+  }, [product.id, product.name, product.slug]);
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link to={`/product/${product.id}`}>
+    <Link to={`/product/${productSlug}`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -62,6 +71,8 @@ export function ProductCard({ product }: ProductCardProps) {
         <img
           src={product.image}
           alt={product.name}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
 
@@ -130,4 +141,4 @@ export function ProductCard({ product }: ProductCardProps) {
     </motion.div>
     </Link>
   );
-}
+});

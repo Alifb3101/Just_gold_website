@@ -1,58 +1,99 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
-import { FilterSidebar } from '@/app/components/shop/FilterSidebar';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { ShopProductCard } from '@/app/components/shop/ShopProductCard';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/app/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
+import { Skeleton } from '@/app/components/ui/skeleton';
+import { fetchProductList } from '@/app/api/products/product-list.api';
+import type { ProductListItem } from '@/app/features/products/product-list.model';
+import { fetchProductByIdSlug } from '@/app/api/products/product-details.api';
 
-// Mock products data
-const generateMockProducts = () => {
-  const products = [];
-  const categories = ['Face', 'Eyes', 'Lips', 'Tools & Brushes', 'Kits & Sets'];
-  const names = [
-    'Luxe Foundation', 'Golden Glow Highlighter', 'Velvet Lipstick', 'Diamond Eyeshadow Palette',
-    'Silk Mascara', 'Rose Blush', 'Contour Palette', 'Setting Spray', 'Makeup Brush Set',
-    'Lip Gloss', 'Eyeliner Pencil', 'Brow Gel', 'Primer', 'Concealer', 'Bronzer',
-    'Lip Liner', 'Eyeshadow Stick', 'Makeup Sponge', 'Face Powder', 'Lip Balm',
-    'Eye Primer', 'Setting Powder', 'Face Mist', 'Makeup Remover'
-  ];
-
-  for (let i = 1; i <= 24; i++) {
-    const hasDiscount = Math.random() > 0.7;
-    const originalPrice = Math.floor(Math.random() * 200) + 100;
-    const price = hasDiscount ? Math.floor(originalPrice * 0.8) : originalPrice;
-    
-    products.push({
-      id: i,
-      name: `${names[Math.floor(Math.random() * names.length)]} ${i}`,
-      image: `https://images.unsplash.com/photo-${
-        ['1522338242992-e1d5e5d8b07f', '1590439471364-192aa70c0a13', '1631214524244-b8df052a5b17',
-         '1583241800698-8cf3c5f8f67e', '1512496015851-a90fb38ba796', '1596462502726-77f8cc2ba7ad'][i % 6]
-      }?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400`,
-      alternateImage: `https://images.unsplash.com/photo-${
-        ['1596462502726-77f8cc2ba7ad', '1522338242992-e1d5e5d8b07f', '1590439471364-192aa70c0a13'][i % 3]
-      }?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400`,
-      price,
-      originalPrice: hasDiscount ? originalPrice : undefined,
-      category: categories[Math.floor(Math.random() * categories.length)],
-      rating: Math.floor(Math.random() * 2) + 4,
-      reviews: Math.floor(Math.random() * 200) + 10,
-      badge: Math.random() > 0.8 ? (Math.random() > 0.5 ? 'NEW' : 'LIMITED') : undefined,
-      colors: Array.from({ length: Math.floor(Math.random() * 6) + 1 }, () => 
-        ['#F5D5C0', '#FFB6C1', '#DC143C', '#8B4513', '#FF7F50', '#B76E79'][Math.floor(Math.random() * 6)]
-      ),
-      inStock: Math.random() > 0.1,
-    });
-  }
-  return products;
-};
+const PAGE_SIZE = 12;
+const FilterSidebarLazy = lazy(() =>
+  import('@/app/components/shop/FilterSidebar').then((module) => ({ default: module.FilterSidebar }))
+);
 
 export function ShopPage() {
-  const [products] = useState(generateMockProducts());
   const [activeFilters, setActiveFilters] = useState({});
   const [sortBy, setSortBy] = useState('featured');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const queryClient = useQueryClient();
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ['products', 'list', PAGE_SIZE],
+    queryFn: ({ pageParam = 1 }) => fetchProductList(pageParam, PAGE_SIZE),
+    getNextPageParam: (lastPage) => {
+      const totalPages = Math.ceil(lastPage.count / lastPage.limit);
+      const nextPage = lastPage.page + 1;
+      return nextPage <= totalPages ? nextPage : undefined;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const products = useMemo(
+    () => data?.pages.flatMap((page) => page.products) ?? [],
+    [data]
+  );
+
+  const totalCount = data?.pages?.[0]?.count ?? 0;
+
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    const el = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '320px' }
+    );
+
+    observer.observe(el);
+    return () => observer.unobserve(el);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const handlePrefetchProduct = useCallback(
+    (product: ProductListItem) => {
+      queryClient.prefetchQuery({
+        queryKey: ['product', product.id],
+        queryFn: ({ signal }) => fetchProductByIdSlug(product.id, product.slug, signal),
+        staleTime: 5 * 60 * 1000,
+      });
+    },
+    [queryClient]
+  );
+
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      {Array.from({ length: PAGE_SIZE }).map((_, index) => (
+        <div
+          key={index}
+          className="bg-white rounded-lg overflow-hidden border border-gray-100"
+        >
+          <Skeleton className="aspect-square w-full" />
+          <div className="p-4 space-y-3">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#FFF9F0]">
@@ -88,7 +129,11 @@ export function ShopPage() {
         <div className="flex gap-8">
           {/* Desktop Sidebar */}
           <aside className="hidden lg:block flex-shrink-0">
-            <FilterSidebar onFilterChange={setActiveFilters} activeFilters={activeFilters} />
+            <Suspense
+              fallback={<Skeleton className="w-[280px] h-[720px] rounded-lg" />}
+            >
+              <FilterSidebarLazy onFilterChange={setActiveFilters} activeFilters={activeFilters} />
+            </Suspense>
           </aside>
 
           {/* Products Section */}
@@ -110,13 +155,15 @@ export function ShopPage() {
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6">
-                    <FilterSidebar onFilterChange={setActiveFilters} activeFilters={activeFilters} />
+                    <Suspense fallback={<Skeleton className="w-full h-[480px] rounded-lg" />}>
+                      <FilterSidebarLazy onFilterChange={setActiveFilters} activeFilters={activeFilters} />
+                    </Suspense>
                   </div>
                   <button
                     onClick={() => setMobileFilterOpen(false)}
                     className="w-full mt-4 bg-[#D4AF37] text-white py-3 rounded-lg font-semibold"
                   >
-                    Show {products.length} Results
+                    Show Results
                   </button>
                 </SheetContent>
               </Sheet>
@@ -144,37 +191,57 @@ export function ShopPage() {
 
             {/* Results Count */}
             <p className="text-sm text-gray-600 mb-6">
-              Showing <span className="font-semibold text-[#D4AF37]">{products.length}</span> products
+              Showing <span className="font-semibold text-[#D4AF37]">{products.length}</span>
+              {totalCount ? ` of ${totalCount}` : ''} products
             </p>
 
-            {/* Product Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {products.map((product) => (
-                <ShopProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {isError ? (
+              <div className="text-red-600 text-sm">{(error as Error).message || 'Failed to load products.'}</div>
+            ) : null}
 
-            {/* Pagination */}
-            <div className="mt-12 flex items-center justify-center gap-2">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
-                Previous
-              </button>
-              {[1, 2, 3, 4].map((page) => (
+            {/* Product Grid */}
+            {isLoading && products.length === 0 ? (
+              renderSkeletons()
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {products.map((product) => (
+                  <ShopProductCard
+                    key={product.id}
+                    product={product}
+                    onPrefetch={() => handlePrefetchProduct(product)}
+                  />
+                ))}
+                {isFetchingNextPage
+                  ? Array.from({ length: 4 }).map((_, index) => (
+                      <div
+                        key={`loading-${index}`}
+                        className="bg-white rounded-lg overflow-hidden border border-gray-100"
+                      >
+                        <Skeleton className="aspect-square w-full" />
+                        <div className="p-4 space-y-3">
+                          <Skeleton className="h-4 w-2/3" />
+                          <Skeleton className="h-6 w-1/2" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      </div>
+                    ))
+                  : null}
+              </div>
+            )}
+
+            {/* Infinite Scroll Sentinel & Fallback Button */}
+            <div ref={loadMoreRef} className="h-10" aria-hidden />
+            {hasNextPage && !isLoading ? (
+              <div className="mt-6 flex justify-center">
                 <button
-                  key={page}
-                  className={`w-10 h-10 rounded-lg font-semibold transition-colors ${
-                    page === 1
-                      ? 'bg-[#D4AF37] text-white'
-                      : 'border border-gray-300 text-gray-600 hover:border-[#D4AF37] hover:text-[#D4AF37]'
-                  }`}
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="px-6 py-3 border-2 border-[#D4AF37] text-[#D4AF37] rounded-lg font-semibold hover:bg-[#D4AF37] hover:text-white transition-colors disabled:opacity-50"
                 >
-                  {page}
+                  {isFetchingNextPage ? 'Loading more…' : 'Load More'}
                 </button>
-              ))}
-              <button className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
-                Next
-              </button>
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

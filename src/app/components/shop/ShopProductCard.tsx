@@ -1,48 +1,59 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Star, ShoppingBag, Eye } from 'lucide-react';
 import { useApp } from '@/app/contexts/AppContext';
 import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
+import type { ProductListItem } from '@/app/features/products/product-list.model';
 import { motion } from 'motion/react';
 
 interface ShopProductCardProps {
-  product: {
-    id: number;
-    name: string;
-    image: string;
+  product: ProductListItem & {
     alternateImage?: string;
-    price: number;
     originalPrice?: number;
-    category: string;
-    rating: number;
-    reviews: number;
+    category?: string;
+    rating?: number;
+    reviews?: number;
     badge?: string;
     colors?: string[];
-    inStock?: boolean;
   };
-  onQuickView?: (product: any) => void;
+  onQuickView?: (product: ProductListItem) => void;
+  onPrefetch?: () => void;
 }
 
-export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) {
+export const ShopProductCard = React.memo(function ShopProductCard({
+  product,
+  onQuickView,
+  onPrefetch,
+}: ShopProductCardProps) {
   const { convertPrice } = useApp();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [showQuickView, setShowQuickView] = useState(false);
-  const [currentImage, setCurrentImage] = useState(product.image);
   const [isAdding, setIsAdding] = useState(false);
 
-  const isWishlisted = isInWishlist(product.id);
+  const baseImage = product.thumbnailUrl || product.imageUrl;
+  const hoverImage = product.hoverImageUrl || product.alternateImage;
+  const hasHoverImage = Boolean(hoverImage);
+
+  const numericId = Number(product.id);
+  const isWishlisted = isInWishlist(numericId);
+  const rating = product.rating ?? 0;
+  const reviews = product.reviews ?? 0;
+  const productPath = useMemo(() => {
+    const slugSegment = product.slug ? `${product.id}-${product.slug}` : product.id;
+    return `/product/${slugSegment}`;
+  }, [product.id, product.slug]);
 
   const handleAddToCart = async () => {
     setIsAdding(true);
     addToCart({
-      id: product.id,
+      id: numericId,
       name: product.name,
-      image: product.image,
+      image: baseImage,
       price: product.price,
       originalPrice: product.originalPrice,
-      category: product.category,
+      category: product.category ?? 'All',
       inStock: product.inStock ?? true,
       maxQuantity: 10,
     });
@@ -53,17 +64,17 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
     e.preventDefault();
     e.stopPropagation();
     if (isWishlisted) {
-      removeFromWishlist(product.id);
+      removeFromWishlist(numericId);
     } else {
       addToWishlist({
-        id: product.id,
+        id: numericId,
         name: product.name,
-        image: product.image,
+        image: baseImage,
         price: product.price,
         originalPrice: product.originalPrice,
-        category: product.category,
-        rating: product.rating,
-        reviews: product.reviews,
+        category: product.category ?? 'All',
+        rating,
+        reviews,
         inStock: product.inStock ?? true,
         addedDate: new Date().toISOString(),
       });
@@ -77,7 +88,12 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
   };
 
   return (
-    <Link to={`/product/${product.id}`} className="block">
+    <Link
+      to={productPath}
+      className="block"
+      onMouseEnter={() => onPrefetch?.()}
+      onFocus={() => onPrefetch?.()}
+    >
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -86,11 +102,9 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
       className="group relative bg-white rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300"
       onMouseEnter={() => {
         setShowQuickView(true);
-        if (product.alternateImage) setCurrentImage(product.alternateImage);
       }}
       onMouseLeave={() => {
         setShowQuickView(false);
-        setCurrentImage(product.image);
       }}
     >
       {/* Badges */}
@@ -134,10 +148,24 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-[#FAF3E0]">
         <img
-          src={currentImage}
+          src={baseImage}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          loading="lazy"
+          decoding="async"
+          className={`w-full h-full object-cover transition-all duration-500 ${
+            hasHoverImage ? 'group-hover:scale-105 group-hover:opacity-0' : 'group-hover:scale-105'
+          }`}
         />
+
+        {hasHoverImage && (
+          <img
+            src={hoverImage}
+            alt={`${product.name} alternate view`}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105"
+          />
+        )}
 
         {/* Quick View Overlay */}
         {showQuickView && (
@@ -159,7 +187,7 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
       {/* Product Info */}
       <div className="p-4">
         {/* Category Tag */}
-        <p className="text-xs text-[#D4AF37] mb-1 font-medium">{product.category}</p>
+        <p className="text-xs text-[#D4AF37] mb-1 font-medium">{product.category ?? 'Beauty'}</p>
 
         {/* Product Name */}
         <h3 className="font-medium text-[#3E2723] mb-2 line-clamp-2 group-hover:text-[#D4AF37] transition-colors min-h-[2.5rem]">
@@ -173,14 +201,14 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
               <Star
                 key={i}
                 className={`w-3 h-3 ${
-                  i < product.rating
+                  i < rating
                     ? 'fill-[#D4AF37] text-[#D4AF37]'
                     : 'fill-gray-200 text-gray-200'
                 }`}
               />
             ))}
           </div>
-          <span className="text-xs text-[#D4AF37]">({product.reviews})</span>
+          <span className="text-xs text-[#D4AF37]">({reviews})</span>
         </div>
 
         {/* Price */}
@@ -251,4 +279,4 @@ export function ShopProductCard({ product, onQuickView }: ShopProductCardProps) 
     </motion.div>
     </Link>
   );
-}
+});
