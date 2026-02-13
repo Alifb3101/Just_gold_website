@@ -3,6 +3,7 @@ export interface ApiProductListItem {
   name: string;
   slug: string;
   base_price: string;
+  base_stock?: number | null;
   description?: string | null;
   short_description?: string | null;
   product_model_no?: string;

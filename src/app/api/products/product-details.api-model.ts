@@ -8,6 +8,8 @@ export interface ApiVariant {
   discount_price: string | null;
   variant_model_no: string;
   color_type?: string | null;
+  color_panel_type?: 'hex' | 'gradient' | 'image' | null;
+  color_panel_value?: string | null;
 }
 
 export interface ApiMedia {
@@ -26,6 +28,7 @@ export interface ApiProduct {
   is_active: boolean;
   created_at: string;
   base_price: string;
+  base_stock?: number | null;
   product_model_no: string;
   how_to_apply?: string | null;
   benefits?: string | null;

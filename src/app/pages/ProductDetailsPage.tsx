@@ -1,10 +1,66 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, Star, ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react';
 import { fetchProductByIdSlug } from '@/app/api/products/product-details.api';
 import type { Product, ProductImage, ProductShade } from '@/app/features/products/product-details.model';
 import { useCart } from '@/app/contexts/CartContext';
+
+const PANEL_ORDER: Array<'hex' | 'gradient' | 'image'> = ['hex', 'gradient', 'image'];
+const PANEL_LABELS: Record<'hex' | 'gradient' | 'image', string> = {
+  hex: 'Solid Color',
+  gradient: 'Gradient',
+  image: 'Image Swatch',
+};
+const FINISH_ORDER = ['matte', 'shimmer', 'metallic'];
+
+type ShadeSwatchSize = 'sm' | 'md';
+
+type ShadeSwatchProps = {
+  shade: ProductShade;
+  isSelected: boolean;
+  size: ShadeSwatchSize;
+  onSelect: (shadeId: string) => void;
+};
+
+const ShadeSwatch = React.memo(function ShadeSwatch({ shade, isSelected, size, onSelect }: ShadeSwatchProps) {
+  const dimensionClass = size === 'sm' ? 'w-11 h-11' : 'w-[3.25rem] h-[3.25rem]';
+  const insetClass = size === 'sm' ? 'inset-[2px]' : 'inset-[3px]';
+  const panelType = shade.colorPanelType ?? 'hex';
+  const panelValue = shade.colorPanelValue ?? shade.colorHex ?? '';
+  const swatchStyle =
+    panelType === 'hex' || panelType === 'gradient'
+      ? ({ background: panelValue || 'transparent' } as React.CSSProperties)
+      : undefined;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(shade.id)}
+      className={`group relative ${dimensionClass} rounded-full border transition-transform duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#D4AF37] ${
+        isSelected
+          ? 'border-[#D4AF37] shadow-[0_10px_30px_rgba(212,175,55,0.35)] scale-110'
+          : 'border-gray-300 hover:border-[#D4AF37] hover:scale-105'
+      }`}
+      aria-pressed={isSelected}
+      title={shade.name}
+    >
+      {panelType === 'image' && panelValue ? (
+        <img
+          src={panelValue}
+          alt={shade.name}
+          className={`absolute ${insetClass} rounded-full object-cover`}
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <span className={`absolute ${insetClass} rounded-full`} style={swatchStyle} />
+      )}
+      <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden />
+    </button>
+  );
+});
+ShadeSwatch.displayName = 'ShadeSwatch';
 
 // ============================================
 // 📦 MAIN COMPONENT
@@ -23,6 +79,8 @@ export function ProductDetailsPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('');
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
+  const [selectedFinishType, setSelectedFinishType] = useState('matte');
+  const selectedShadeRef = useRef('');
 
   const { productId, slug } = useMemo(() => {
     const match = (productSlug ?? '').match(/^(\d+)-(.*)$/);
@@ -47,7 +105,10 @@ export function ProductDetailsPage() {
   useEffect(() => {
     if (!product) return;
     const defaultShade = product.shades[0]?.id ?? '';
+    const defaultFinish = product.shades[0]?.finishType ?? 'matte';
     setSelectedShade(defaultShade);
+    setSelectedFinishType(defaultFinish);
+    selectedShadeRef.current = defaultShade;
     setSelectedImage(0);
     const defaultVariantImages = product.images.filter((img) => img.variantId === defaultShade);
     const fallbackImages = product.images.filter((img) => !img.variantId).slice(0, 2);
@@ -64,12 +125,56 @@ export function ProductDetailsPage() {
   // 🎬 HANDLERS
   // ============================================
   
-  const selectedShadeData = useMemo(() => {
-    if (!product) return undefined;
-    return product.shades.find((shade) => shade.id === selectedShade) ?? product.shades[0];
-  }, [product, selectedShade]);
+  const shadePanels = useMemo<ProductShade[]>(() => {
+    if (!product) return [];
+    return product.shades.map((shade) => ({
+      ...shade,
+      colorPanelType: shade.colorPanelType ?? 'hex',
+      colorPanelValue: shade.colorPanelValue ?? shade.colorHex ?? '',
+      finishType: shade.finishType ?? 'matte',
+    }));
+  }, [product]);
 
-  const maxStock = selectedShadeData?.stock ?? 0;
+  const finishTypeOptions = useMemo(() => {
+    const set = new Set<string>();
+    shadePanels.forEach((shade) => set.add(shade.finishType ?? 'matte'));
+    const ordered = FINISH_ORDER.filter((f) => set.has(f));
+    const extras = Array.from(set).filter((f) => !FINISH_ORDER.includes(f));
+    return ordered.concat(extras);
+  }, [shadePanels]);
+
+  useEffect(() => {
+    if (!finishTypeOptions.length) return;
+    if (!finishTypeOptions.includes(selectedFinishType)) {
+      setSelectedFinishType(finishTypeOptions[0]);
+    }
+  }, [finishTypeOptions, selectedFinishType]);
+
+  const filteredShadePanels = useMemo(() => {
+    return shadePanels.filter((shade) => (shade.finishType ?? 'matte') === selectedFinishType);
+  }, [shadePanels, selectedFinishType]);
+
+  const shadePanelsByType = useMemo(() => {
+    return filteredShadePanels.reduce((acc, shade) => {
+      const type = shade.colorPanelType ?? 'hex';
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(shade);
+      return acc;
+    }, {} as Record<string, ProductShade[]>);
+  }, [filteredShadePanels]);
+
+  const shadeTypeOrder = useMemo(() => {
+    const ordered = PANEL_ORDER.filter((type) => shadePanelsByType[type]?.length);
+    const extras = Object.keys(shadePanelsByType).filter((type) => !PANEL_ORDER.includes(type as any));
+    return [...ordered, ...extras];
+  }, [shadePanelsByType]);
+
+  const selectedShadeData = useMemo(() => {
+    if (filteredShadePanels.length === 0) return undefined;
+    return filteredShadePanels.find((shade) => shade.id === selectedShade) ?? filteredShadePanels[0];
+  }, [filteredShadePanels, selectedShade]);
+
+  const maxStock = selectedShadeData?.stock ?? product?.baseStock ?? 0;
   const effectivePrice = selectedShadeData?.discountPrice ?? selectedShadeData?.price ?? product?.price ?? 0;
   const originalPrice = selectedShadeData?.discountPrice ? selectedShadeData.price : undefined;
   const discountPercent = selectedShadeData?.discountPrice && selectedShadeData.price
@@ -82,12 +187,21 @@ export function ProductDetailsPage() {
     return product.images.filter((img) => !img.variantId);
   }, [product]);
 
-  const gallery: (ProductImage | null)[] = useMemo(() => [variantMedia[0], variantMedia[1], ...baseMedia], [variantMedia, baseMedia]);
+  const gallery: ProductImage[] = useMemo(() => {
+    const ordered = [variantMedia[0], variantMedia[1], ...baseMedia];
+    const seen = new Set<string>();
+
+    return ordered.filter((image): image is ProductImage => {
+      if (!image || !image.url) return false;
+      const key = `${image.type}-${image.url}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [variantMedia, baseMedia]);
 
   useEffect(() => {
-    if (!selectedShade) return;
-    setSelectedImage(0);
-    setQuantity(1);
+    selectedShadeRef.current = selectedShade;
   }, [selectedShade]);
 
   const handleQuantityChange = (action: 'increase' | 'decrease') => {
@@ -99,14 +213,21 @@ export function ProductDetailsPage() {
   };
 
   const handleAddToBag = () => {
-    if (!product || !selectedShadeData) return;
+    if (!product) return;
     if (maxStock && quantity > maxStock) return;
+    if (maxStock === 0) return;
+
+    const imageCandidate = selectedShadeData?.imageUrl
+      || selectedShadeData?.secondaryImageUrl
+      || variantMedia[0]?.url
+      || baseMedia[0]?.url
+      || '';
 
     addToCart(
       {
-        id: Number(selectedShadeData.id),
-        name: `${product.name} - ${selectedShadeData.name}`,
-        image: selectedShadeData.imageUrl || selectedShadeData.secondaryImageUrl || variantMedia[0]?.url || '',
+        id: Number(selectedShadeData?.id ?? product.id),
+        name: selectedShadeData ? `${product.name} - ${selectedShadeData.name}` : product.name,
+        image: imageCandidate,
         price: effectivePrice,
         originalPrice,
         category: 'Beauty',
@@ -117,13 +238,28 @@ export function ProductDetailsPage() {
     );
   };
 
-  const handleShadeSelect = (shadeId: string) => {
-    if (!product) return;
-    setSelectedShade(shadeId);
-    const variantImages = product.images.filter((image) => image.variantId === shadeId);
-    setVariantMedia([variantImages[0] ?? null, variantImages[1] ?? null]);
-    setSelectedImage(0);
-  };
+  const handleShadeSelect = useCallback(
+    (shadeId: string) => {
+      if (!product || shadeId === selectedShadeRef.current) return;
+
+      const variantImages = product.images.filter((image) => image.variantId === shadeId);
+      selectedShadeRef.current = shadeId;
+      setSelectedShade(shadeId);
+      setVariantMedia([variantImages[0] ?? null, variantImages[1] ?? null]);
+      setSelectedImage(0);
+      setQuantity(1);
+    },
+    [product]
+  );
+
+  useEffect(() => {
+    if (!filteredShadePanels.length) return;
+    const currentInFilter = filteredShadePanels.find((shade) => shade.id === selectedShade);
+    if (!currentInFilter) {
+      const fallbackShade = filteredShadePanels[0];
+      handleShadeSelect(fallbackShade.id);
+    }
+  }, [filteredShadePanels, selectedShade, handleShadeSelect]);
 
   const handleMediaSelect = (index: number) => {
     const maxIndex = Math.max(0, gallery.length - 1);
@@ -322,25 +458,60 @@ export function ProductDetailsPage() {
               </div>
 
               {/* 7. Shade Selection */}
-              {product.shades.length > 0 && (
-                <div className="mb-4">
-                  <label className="block text-xs font-semibold text-[#3E2723] mb-2">
-                    CHOOSE SHADE: {selectedShadeData?.name} {selectedShadeData?.variantModelNo}
+              {shadePanels.length > 0 && (
+                <div className="mb-4 rounded-2xl border border-[#F0E8DC] bg-gradient-to-br from-white via-[#FFF8EF] to-white p-4 shadow-[0_12px_30px_rgba(34,27,22,0.06)]">
+                  {finishTypeOptions.length > 1 && (
+                    <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                      {finishTypeOptions.map((finish) => (
+                        <button
+                          key={finish}
+                          type="button"
+                          onClick={() => setSelectedFinishType(finish)}
+                          className={`px-3.5 py-1 rounded-full border text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors whitespace-nowrap shadow-sm ${
+                            selectedFinishType === finish
+                              ? 'border-[#D4AF37] bg-white text-[#3E2723] shadow-[0_6px_18px_rgba(212,175,55,0.18)]'
+                              : 'border-[#EFE5D5] bg-white text-[#6B5B4A] hover:border-[#D4AF37] hover:text-[#3E2723]'
+                          }`}
+                        >
+                          {finish}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <label className="block text-xs font-semibold text-[#3E2723] mb-2 flex items-center gap-2">
+                    <span>CHOOSE SHADE: {selectedShadeData?.name} {selectedShadeData?.variantModelNo}</span>
+                    {selectedShadeData?.colorPanelType && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#F7EEDD] text-[10px] uppercase tracking-[0.08em] text-[#5A4635] border border-[#EBD8AF]">
+                        {PANEL_LABELS[selectedShadeData.colorPanelType as 'hex' | 'gradient' | 'image'] ?? 'Color'}
+                      </span>
+                    )}
                   </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {product.shades.map((shade) => (
-                      <button
-                        key={shade.id}
-                        onClick={() => handleShadeSelect(shade.id)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
-                          selectedShade === shade.id
-                            ? 'border-[#D4AF37] scale-110 shadow-lg'
-                            : 'border-gray-300 hover:border-[#D4AF37]'
-                        }`}
-                        style={{ backgroundColor: shade.colorHex }}
-                        title={shade.name}
-                      />
-                    ))}
+
+                  <div className="space-y-3">
+                    {shadeTypeOrder.map((type) => {
+                      const shades = shadePanelsByType[type];
+                      if (!shades?.length) return null;
+                      const label = PANEL_LABELS[type as 'hex' | 'gradient' | 'image'] ?? type;
+                      return (
+                        <div key={type} className="rounded-xl bg-white/80 p-3 border border-[#F2E7D6] shadow-[0_8px_24px_rgba(34,27,22,0.04)]">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[11px] font-semibold text-[#3E2723] uppercase tracking-[0.08em]">{label}</span>
+                            <span className="h-px flex-1 bg-gradient-to-r from-[#E9DCC5] via-[#F1E6D5] to-transparent" />
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {shades.map((shade) => (
+                              <ShadeSwatch
+                                key={shade.id}
+                                shade={shade}
+                                isSelected={selectedShade === shade.id}
+                                size="sm"
+                                onSelect={handleShadeSelect}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -426,25 +597,62 @@ export function ProductDetailsPage() {
               </div>
 
               {/* Shade Selection */}
-              {product.shades.length > 0 && (
-                <div className="mb-4 md:mb-6">
-                  <label className="block text-xs md:text-sm font-semibold text-[#3E2723] mb-2 md:mb-3">
-                    CHOOSE SHADE: {selectedShadeData?.name} {selectedShadeData?.variantModelNo}
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                    {product.shades.map((shade) => (
-                      <button
-                        key={shade.id}
-                        onClick={() => handleShadeSelect(shade.id)}
-                        className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 transition-all ${
-                          selectedShade === shade.id
-                            ? 'border-[#D4AF37] scale-110 shadow-lg'
-                            : 'border-gray-300 hover:border-[#D4AF37]'
-                        }`}
-                        style={{ backgroundColor: shade.colorHex }}
-                        title={shade.name}
-                      />
-                    ))}
+              {shadePanels.length > 0 && (
+                <div className="mb-4 md:mb-6 rounded-2xl border border-[#F0E8DC] bg-gradient-to-br from-white via-[#FFF8EF] to-white p-5 shadow-[0_14px_36px_rgba(34,27,22,0.06)]">
+                  {finishTypeOptions.length > 1 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {finishTypeOptions.map((finish) => (
+                        <button
+                          key={finish}
+                          type="button"
+                          onClick={() => setSelectedFinishType(finish)}
+                          className={`px-4 py-1.5 rounded-full border text-[11px] md:text-xs font-semibold uppercase tracking-[0.08em] transition-colors shadow-sm ${
+                            selectedFinishType === finish
+                              ? 'border-[#D4AF37] bg-white text-[#3E2723] shadow-[0_8px_22px_rgba(212,175,55,0.18)]'
+                              : 'border-[#EFE5D5] bg-white text-[#6B5B4A] hover:border-[#D4AF37] hover:text-[#3E2723]'
+                          }`}
+                        >
+                          {finish}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <label className="block text-xs md:text-sm font-semibold text-[#3E2723]">
+                      CHOOSE SHADE: {selectedShadeData?.name} {selectedShadeData?.variantModelNo}
+                    </label>
+                    {selectedShadeData?.colorPanelType && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#F7EEDD] text-[11px] uppercase tracking-[0.08em] text-[#5A4635] border border-[#EBD8AF]">
+                        {PANEL_LABELS[selectedShadeData.colorPanelType as 'hex' | 'gradient' | 'image'] ?? 'Color'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {shadeTypeOrder.map((type) => {
+                      const shades = shadePanelsByType[type];
+                      if (!shades?.length) return null;
+                      const label = PANEL_LABELS[type as 'hex' | 'gradient' | 'image'] ?? type;
+                      return (
+                        <div key={type} className="rounded-xl bg-white/85 p-3 md:p-4 border border-[#F2E7D6] shadow-[0_10px_26px_rgba(34,27,22,0.05)]">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-[11px] md:text-xs font-semibold text-[#3E2723] uppercase tracking-[0.08em]">{label}</span>
+                            <span className="h-px flex-1 bg-gradient-to-r from-[#E9DCC5] via-[#F1E6D5] to-transparent" />
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 md:gap-2">
+                            {shades.map((shade) => (
+                              <ShadeSwatch
+                                key={shade.id}
+                                shade={shade}
+                                isSelected={selectedShade === shade.id}
+                                size="md"
+                                onSelect={handleShadeSelect}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

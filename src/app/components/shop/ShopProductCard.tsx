@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Star, ShoppingBag, Eye } from 'lucide-react';
+import { Heart, Star, ShoppingBag } from 'lucide-react';
 import { useApp } from '@/app/contexts/AppContext';
 import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
@@ -17,19 +17,16 @@ interface ShopProductCardProps {
     badge?: string;
     colors?: string[];
   };
-  onQuickView?: (product: ProductListItem) => void;
   onPrefetch?: () => void;
 }
 
 export const ShopProductCard = React.memo(function ShopProductCard({
   product,
-  onQuickView,
   onPrefetch,
 }: ShopProductCardProps) {
   const { convertPrice } = useApp();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  const [showQuickView, setShowQuickView] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
   const baseImage = product.thumbnailUrl || product.imageUrl;
@@ -81,12 +78,6 @@ export const ShopProductCard = React.memo(function ShopProductCard({
     }
   };
 
-  const handleQuickView = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onQuickView?.(product);
-  };
-
   return (
     <Link
       to={productPath}
@@ -100,12 +91,6 @@ export const ShopProductCard = React.memo(function ShopProductCard({
       transition={{ duration: 0.5 }}
       viewport={{ once: true }}
       className="group relative bg-white rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300"
-      onMouseEnter={() => {
-        setShowQuickView(true);
-      }}
-      onMouseLeave={() => {
-        setShowQuickView(false);
-      }}
     >
       {/* Badges */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
@@ -121,7 +106,7 @@ export const ShopProductCard = React.memo(function ShopProductCard({
         )}
       </div>
 
-      {/* Wishlist & Quick View Icons */}
+      {/* Wishlist Icon */}
       <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
         <button
           onClick={handleWishlistToggle}
@@ -133,16 +118,6 @@ export const ShopProductCard = React.memo(function ShopProductCard({
             }`}
           />
         </button>
-        {showQuickView && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={handleQuickView}
-            className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-[#D4AF37] hover:text-white transition-all shadow-md"
-          >
-            <Eye className="w-5 h-5" />
-          </motion.button>
-        )}
       </div>
 
       {/* Product Image */}
@@ -167,21 +142,6 @@ export const ShopProductCard = React.memo(function ShopProductCard({
           />
         )}
 
-        {/* Quick View Overlay */}
-        {showQuickView && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-black/20 flex items-center justify-center"
-          >
-            <button
-              onClick={handleQuickView}
-              className="bg-white text-[#D4AF37] px-6 py-2 rounded-full font-semibold hover:bg-[#D4AF37] hover:text-white transition-all z-20 relative"
-            >
-              Quick View
-            </button>
-          </motion.div>
-        )}
       </div>
 
       {/* Product Info */}

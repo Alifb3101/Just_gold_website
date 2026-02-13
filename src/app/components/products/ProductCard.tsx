@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Heart, Star, ShoppingBag, Eye } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { useApp } from '@/app/contexts/AppContext';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -20,7 +20,6 @@ interface ProductCardProps {
 export const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const { convertPrice } = useApp();
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [showQuickView, setShowQuickView] = useState(false);
 
   const productSlug = useMemo(() => {
     const normalized = (product.slug ?? product.name)
@@ -44,8 +43,6 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
         transition={{ duration: 0.5 }}
         viewport={{ once: true }}
         className="group relative bg-white rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer"
-        onMouseEnter={() => setShowQuickView(true)}
-        onMouseLeave={() => setShowQuickView(false)}
       >
       {/* Badge */}
       {product.badge && (
@@ -75,36 +72,6 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
           decoding="async"
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
-
-        {/* Quick View Overlay */}
-        {showQuickView && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-black/40 flex items-center justify-center gap-3"
-          >
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // TODO: Open quick view modal
-              }}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white transition-colors z-20"
-            >
-              <Eye className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // TODO: Add to cart
-              }}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white transition-colors z-20"
-            >
-              <ShoppingBag className="w-5 h-5" />
-            </button>
-          </motion.div>
-        )}
       </div>
 
       {/* Product Info */}

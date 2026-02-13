@@ -28,9 +28,11 @@ const resolveHoverImage = (api: ApiProductListItem) => {
 
 export const mapApiListProductToProduct = (api: ApiProductListItem): ProductListItem => {
   const price = Number(api.base_price) || Number(api.variants?.[0]?.price ?? 0) || 0;
-  const inStock = (api.variants ?? []).length === 0
-    ? true
-    : api.variants?.some((variant) => variant.stock > 0) ?? true;
+  const baseStock = Number(api.base_stock ?? 0) || 0;
+  const hasVariants = (api.variants ?? []).length > 0;
+  const inStock = hasVariants
+    ? api.variants?.some((variant) => variant.stock > 0) ?? false
+    : baseStock > 0;
 
   const thumbnailUrl = resolveThumbnail(api);
   const hoverImageUrl = resolveHoverImage(api);

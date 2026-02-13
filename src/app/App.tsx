@@ -4,7 +4,6 @@ import { AppProvider } from '@/app/contexts/AppContext';
 import { CartProvider } from '@/app/contexts/CartContext';
 import { WishlistProvider } from '@/app/contexts/WishlistContext';
 import { Toaster } from '@/app/components/ui/sonner';
-import { UtilityBar } from '@/app/components/navigation/UtilityBar';
 import { MainNavigation } from '@/app/components/navigation/MainNavigation';
 import { Footer } from '@/app/components/Footer';
 import { HomePage } from '@/app/pages/HomePage';
@@ -12,6 +11,7 @@ import { ShopPage } from '@/app/pages/ShopPage';
 import { CartPage } from '@/app/pages/CartPage';
 import { WishlistPage } from '@/app/pages/WishlistPage';
 import { ProductDetailsPage } from '@/app/pages/ProductDetailsPage';
+import { CategoryProvider } from '@/store/categoryStore';
 
 
 function App() {
@@ -19,6 +19,7 @@ function App() {
     <AppProvider>
       <CartProvider>
         <WishlistProvider>
+          <CategoryProvider>
           <Router>
             <div className="min-h-screen bg-[#FFF9F0]">
               {/* Navigation */}
@@ -54,6 +55,7 @@ function App() {
               />
             </div>
           </Router>
+          </CategoryProvider>
         </WishlistProvider>
       </CartProvider>
     </AppProvider>

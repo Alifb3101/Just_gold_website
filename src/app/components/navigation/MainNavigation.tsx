@@ -8,10 +8,12 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import type { ApiCategoryNode } from "@/app/api/categories/categories.api-model";
 
 import { useApp } from "@/app/contexts/AppContext";
 import { useCart } from "@/app/contexts/CartContext";
 import { useWishlist } from "@/app/contexts/WishlistContext";
+import { useCategories } from "@/store/categoryStore";
 
 import { MegaMenu } from "./MegaMenu";
 import { MobileNav } from "./MobileNav";
@@ -23,11 +25,13 @@ export function MainNavigation() {
   const { isRTL, currency, setCurrency } = useApp();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
+  const { categories, status } = useCategories();
   const navigate = useNavigate();
   const location = useLocation();
-  const categoryParam = new URLSearchParams(location.search).get("category");
+  const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const categoryParam = params.get("category");
 
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const closeTimerRef = useRef<number | null>(null);
 
   // ✅ Drawer
@@ -71,44 +75,15 @@ export function MainNavigation() {
     return () => clearTimeout(t);
   }, [isMobileSearchOpen]);
 
-  const menuItems = useMemo(
-    () => [
-      {
-        label: "NEW IN",
-        hasNew: true,
-        submenu: ["All New Arrivals", "New Face", "New Eyes", "New Lips"],
-      },
-      {
-        label: "MAKEUP",
-        hasDropdown: true,
-        submenu: ["Face", "Eyes", "Lips", "Cheeks", "Nails"],
-      },
-      {
-        label: "FACE",
-        hasDropdown: true,
-        submenu: ["Foundation", "Concealer", "Powder", "Primer", "Setting Spray"],
-      },
-      {
-        label: "EYES",
-        hasDropdown: true,
-        submenu: ["Eyeshadow", "Eyeliner", "Mascara", "Eyebrow", "Eye Primer"],
-      },
-      {
-        label: "LIPS",
-        hasDropdown: true,
-        submenu: ["Lipstick", "Lip Gloss", "Lip Liner", "Lip Balm"],
-      },
-      {
-        label: "TOOLS & BRUSHES",
-        hasDropdown: true,
-        submenu: ["Face Brushes", "Eye Brushes", "Lip Brushes", "Sponges", "Tools"],
-      },
-      { label: "KITS & SETS" },
-      { label: "BEST SELLERS" },
-      { label: "GIFTS" },
-    ],
-    []
-  );
+  const menuItems = useMemo(() => categories, [categories]);
+
+  const goCategory = (cat: ApiCategoryNode) => {
+    navigate(`/shop?category=${cat.id}`);
+  };
+
+  const goSubcategory = (parent: ApiCategoryNode, subId: number) => {
+    navigate(`/shop?category=${subId}`);
+  };
 
   return (
     <>
@@ -283,25 +258,35 @@ export function MainNavigation() {
             <div className="md:h-[65px] lg:h-[70px] xl:h-[85px] h-[85px] flex items-center justify-center">
               {/* Desktop Menu Items */}
               <div className="hidden lg:flex items-center gap-6 md:gap-7 lg:gap-8 xl:gap-12">
-                {menuItems.map((item, index) => {
+                {status === 'loading' && menuItems.length === 0 ? (
+                  <div className="flex gap-4">
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <div key={idx} className="w-20 h-4 rounded-full bg-[#D4AF37]/20 animate-pulse" />
+                    ))}
+                  </div>
+                ) : null}
+
+                {menuItems.map((item) => {
                   const isActive =
-                    location.pathname === "/shop" && categoryParam === item.label;
+                    location.pathname === "/shop" &&
+                    (categoryParam === String(item.id) ||
+                      item.subcategories?.some((s) => String(s.id) === categoryParam));
 
                   return (
                     <div
-                      key={index}
+                      key={item.id}
                       className="relative"
                       onMouseEnter={() => {
                         if (closeTimerRef.current) {
                           window.clearTimeout(closeTimerRef.current);
                           closeTimerRef.current = null;
                         }
-                        if (item.hasDropdown) {
-                          setActiveMenu(item.label);
+                        if (item.subcategories && item.subcategories.length > 0) {
+                          setActiveMenu(item.id);
                         }
                       }}
                       onMouseLeave={() => {
-                        if (!item.hasDropdown) return;
+                        if (!item.subcategories || item.subcategories.length === 0) return;
                         if (closeTimerRef.current) {
                           window.clearTimeout(closeTimerRef.current);
                         }
@@ -311,7 +296,14 @@ export function MainNavigation() {
                       }}
                     >
                       <button
-                        onClick={() => navigate(`/shop?category=${item.label}`)}
+                        onClick={() => {
+                          if (item.subcategories && item.subcategories.length > 0) {
+                            goCategory(item);
+                          } else {
+                            goCategory(item);
+                            setActiveMenu(null);
+                          }
+                        }}
                         className={`
                           relative flex items-center gap-1
                           font-bold tracking-wide md:text-sm lg:text-sm xl:text-lg
@@ -322,23 +314,10 @@ export function MainNavigation() {
                         `}
                       >
                         <span className="relative">
-                          {item.label}
-
-                          {item.hasNew && (
-                            <span
-                              className="
-                                absolute -top-5 -right-11
-                                bg-[#D4AF37] text-white text-[12px]
-                                px-3 py-1.5 rounded-full
-                                shadow-lg font-bold
-                              "
-                            >
-                              NEW
-                            </span>
-                          )}
+                          {item.name}
                         </span>
 
-                        {item.hasDropdown && (
+                        {item.subcategories && item.subcategories.length > 0 && (
                           <ChevronDown className="w-4 h-4 opacity-80" />
                         )}
 
@@ -362,9 +341,11 @@ export function MainNavigation() {
           </div>
 
           {/* Mega Menu */}
-          {activeMenu && (
+          {activeMenu !== null && (
             <MegaMenu
-              category={activeMenu}
+              category={menuItems.find((c) => c.id === activeMenu) as ApiCategoryNode}
+              onSelectCategory={goCategory}
+              onSelectSubcategory={goSubcategory}
               onClose={() => setActiveMenu(null)}
               onMouseEnter={() => {
                 if (closeTimerRef.current) {

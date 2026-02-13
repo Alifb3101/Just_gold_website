@@ -2,15 +2,6 @@ import { ASSET_BASE_URL } from '@/app/api/http';
 import type { ApiProduct } from '@/app/api/products/product-details.api-model';
 import type { Product, ProductImage, ProductTab } from '@/app/features/products/product-details.model';
 
-const SHADE_COLORS = [
-  '#F5D5C0',
-  '#F0C9B0',
-  '#E8B896',
-  '#D9A87E',
-  '#C89466',
-  '#B76E79',
-];
-
 const buildAssetUrl = (value?: string | null) => {
   if (!value) return '';
   if (value.startsWith('http')) return value;
@@ -24,7 +15,24 @@ const resolveMediaType = (url: string, mediaType?: string): 'image' | 'video' =>
   return 'image';
 };
 
+const normalizeColorPanelType = (type?: string | null): 'hex' | 'gradient' | 'image' | undefined => {
+  if (!type) return undefined;
+  const normalized = type.toLowerCase();
+  if (normalized === 'hex' || normalized === 'gradient' || normalized === 'image') {
+    return normalized as 'hex' | 'gradient' | 'image';
+  }
+  return undefined;
+};
+
+const normalizeFinishType = (type?: string | null): string | undefined => {
+  if (!type) return undefined;
+  const normalized = type.toLowerCase();
+  if (normalized === 'matte' || normalized === 'shimmer' || normalized === 'metallic') return normalized;
+  return normalized;
+};
+
 export const mapApiProductToProduct = (api: ApiProduct): Product => {
+  const baseStock = Number(api.base_stock ?? 0) || 0;
   const tabs: ProductTab[] = [];
   const pushTab = (id: string, label: string, content?: string | null) => {
     if (content && content.trim().length > 0) {
@@ -37,17 +45,29 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
   pushTab('key-features', 'KEY FEATURES', api.key_features);
   pushTab('ingredients', 'INGREDIENTS', api.ingredients);
 
-  const shades = (api.variants ?? []).map((variant, index) => ({
-    id: String(variant.id),
-    name: variant.shade,
-    colorHex: SHADE_COLORS[index % SHADE_COLORS.length],
-    imageUrl: buildAssetUrl(variant.main_image) || undefined,
-    secondaryImageUrl: buildAssetUrl(variant.secondary_image) || undefined,
-    price: Number(variant.price) || 0,
-    discountPrice: variant.discount_price ? Number(variant.discount_price) : null,
-    stock: Number.isFinite(variant.stock) ? variant.stock : 0,
-    variantModelNo: variant.variant_model_no,
-  }));
+  const shades = (api.variants ?? []).map((variant) => {
+    const colorPanelType = normalizeColorPanelType(variant.color_panel_type);
+    const colorPanelValue =
+      colorPanelType === 'image'
+        ? buildAssetUrl(variant.color_panel_value) || undefined
+        : variant.color_panel_value ?? undefined;
+    const finishType = normalizeFinishType(variant.color_type) ?? 'matte';
+
+    return {
+      id: String(variant.id),
+      name: variant.shade,
+      colorHex: colorPanelType === 'hex' ? colorPanelValue : undefined,
+      colorPanelType,
+      colorPanelValue,
+      finishType,
+      imageUrl: buildAssetUrl(variant.main_image) || undefined,
+      secondaryImageUrl: buildAssetUrl(variant.secondary_image) || undefined,
+      price: Number(variant.price) || 0,
+      discountPrice: variant.discount_price ? Number(variant.discount_price) : null,
+      stock: Number.isFinite(variant.stock) ? variant.stock : 0,
+      variantModelNo: variant.variant_model_no,
+    };
+  });
 
   const variantImages = (api.variants ?? []).flatMap((variant, index) => {
     const mainUrl = buildAssetUrl(variant.main_image);
@@ -95,7 +115,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
 
   const inStock =
     (api.variants ?? []).length === 0
-      ? true
+      ? baseStock > 0
       : api.variants.some((variant) => variant.stock > 0);
 
   return {
@@ -107,6 +127,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
     currency: 'AED',
     description: api.description ?? '',
     productModelNo: api.product_model_no,
+    baseStock,
     images,
     shades,
     tabs,

@@ -80,7 +80,7 @@ export function CategoryLinks() {
           className="overflow-x-auto overflow-y-visible scrollbar-hide scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex gap-2 sm:gap-3 md:gap-2 lg:gap-3 xl:gap-6 pb-6 pt-2 min-w-max lg:min-w-0 lg:justify-center">
+          <div className="flex gap-2 sm:gap-4 md:gap-2 lg:gap-3 xl:gap-6 pb-6 pt-2 min-w-max  lg:justify-center">
             {categories.map((category, index) => {
               const Icon = category.icon;
               return (

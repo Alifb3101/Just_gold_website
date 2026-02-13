@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { X, ChevronRight, ChevronLeft, User, Facebook, Instagram, Youtube } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useCategories } from "@/store/categoryStore";
+import type { ApiCategoryNode } from "@/app/api/categories/categories.api-model";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -17,9 +20,11 @@ type MenuItem = {
 
 export function MobileNav({ isOpen, onClose, headerOffset = 110 }: MobileNavProps) {
   const [mounted, setMounted] = useState(false);
+  const navigate = useNavigate();
+  const { categories } = useCategories();
 
   // ✅ Submenu panel state
-  const [activeCategory, setActiveCategory] = useState<MenuItem | null>(null);
+  const [activeCategory, setActiveCategory] = useState<ApiCategoryNode | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,20 +39,20 @@ export function MobileNav({ isOpen, onClose, headerOffset = 110 }: MobileNavProp
   }, [isOpen]);
 
   const menuItems: MenuItem[] = useMemo(
-    () => [
-      { label: "Face", submenu: ["Foundation", "Concealer", "Powder", "Primer", "Setting Spray"] },
-      { label: "Lips", submenu: ["Lipstick", "Lip Gloss", "Lip Liner", "Lip Balm"] },
-      { label: "Eyes", submenu: ["Eyeshadow", "Eyeliner", "Mascara", "Brows", "Lashes"] },
-      { label: "Accessories", submenu: ["Brushes", "Sponges", "Tools", "Bags"] },
-      { label: "Skin & Nail Care", submenu: ["Cleanser", "Moisturizer", "Serum", "Nail Care"] },
-      { label: "Fragrance", submenu: ["Women", "Men", "Body Mist", "Gift Sets"] },
-      { label: "Brands", submenu: ["Forever52", "Character", "NYX", "Maybelline"] },
-      { label: "New In", submenu: ["All New", "New Face", "New Eyes", "New Lips"] },
-      { label: "Collections", submenu: ["Limited Edition", "Trending", "Seasonal"] },
-      { label: "Offers", submenu: ["Sale", "Bundles", "Best Deals"] },
-    ],
-    []
+    () => categories.map((c) => ({ label: c.name, submenu: c.subcategories?.map((s) => s.name) })),
+    [categories]
   );
+
+  const findCategory = (label: string) => categories.find((c) => c.name === label) ?? null;
+  const goCategory = (cat: ApiCategoryNode) => {
+    navigate(`/shop?category=${cat.id}`);
+    onClose();
+  };
+
+  const goSub = (parent: ApiCategoryNode, subId: number) => {
+    navigate(`/shop?category=${subId}`);
+    onClose();
+  };
 
   if (!mounted) return null;
 
@@ -122,12 +127,17 @@ export function MobileNav({ isOpen, onClose, headerOffset = 110 }: MobileNavProp
             <nav className="h-full overflow-y-auto">
               <ul>
                 {menuItems.map((item, index) => {
-                  const hasSub = item.submenu && item.submenu.length > 0;
+                  const cat = findCategory(item.label);
+                  const hasSub = cat?.subcategories && cat.subcategories.length > 0;
 
                   return (
                     <li key={index} className="border-b border-black/5">
                       <button
-                        onClick={() => hasSub && setActiveCategory(item)}
+                        onClick={() => {
+                          if (!cat) return;
+                          if (hasSub) setActiveCategory(cat);
+                          else goCategory(cat);
+                        }}
                         className="
                           w-full px-5 py-[18px]
                           flex items-center justify-between
@@ -156,32 +166,34 @@ export function MobileNav({ isOpen, onClose, headerOffset = 110 }: MobileNavProp
               <ul>
                 {/* ✅ View All Row */}
                 <li className="border-b border-black/5">
-                  <a
-                    href="#"
+                  <button
+                    type="button"
+                    onClick={() => activeCategory && goCategory(activeCategory)}
                     className="
-                      px-5 py-[18px] flex items-center justify-between
+                      w-full px-5 py-[18px] flex items-center justify-between
                       text-[15px] font-semibold text-black/90
                       hover:bg-black/[0.03] transition
                     "
                   >
-                    View all
+                    View all {activeCategory?.name ?? ''}
                     <ChevronRight className="w-5 h-5 text-black/35" />
-                  </a>
+                  </button>
                 </li>
 
-                {(activeCategory?.submenu || []).map((sub, idx) => (
+                {(activeCategory?.subcategories || []).map((sub, idx) => (
                   <li key={idx} className="border-b border-black/5">
-                    <a
-                      href="#"
+                    <button
+                      type="button"
+                      onClick={() => activeCategory && goSub(activeCategory, sub.id)}
                       className="
-                        px-5 py-[18px] flex items-center justify-between
+                        w-full px-5 py-[18px] flex items-center justify-between
                         text-[15px] font-medium text-black/80
                         hover:bg-black/[0.03] transition
                       "
                     >
-                      {sub}
+                      {sub.name}
                       <ChevronRight className="w-5 h-5 text-black/30" />
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>

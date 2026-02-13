@@ -12,7 +12,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const currencySymbols = {
-  AED: 'د.إ',
+  AED: 'AED',
   USD: '$',
   INR: '₹',
   KWD: 'د.ك'

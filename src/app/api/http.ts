@@ -33,6 +33,9 @@ type FetchJsonOptions = RequestInit & {
 
 const buildApiUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) return path;
+  // Allow callers to hit the Vite proxy (and any same-origin API routes) directly.
+  // Example: `/api/products` should not become `${API_BASE_URL}/api/products`.
+  if (path === '/api' || path.startsWith('/api/')) return path;
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${API_BASE_URL}${normalizedPath}`;
 };
