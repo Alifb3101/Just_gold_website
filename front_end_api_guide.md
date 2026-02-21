@@ -31,12 +31,19 @@
 | GET    | `/categories`        | Full category tree (parent + children). |
 | GET    | `/categories/:id`    | Single category detail (if implemented). |
 
-### Auth & Orders (if needed)
-| Method | Endpoint                 | Description |
-|--------|--------------------------|-------------|
-| POST   | `/auth/login`            | Obtain JWT. |
-| GET    | `/orders` (protected)    | List orders for authenticated user. |
-| POST   | `/orders` (protected)    | Create order from cart payload. |
+### Auth
+| Method | Endpoint         | Description |
+|--------|------------------|-------------|
+| POST   | `/auth/register` | Create user account and receive role + id. |
+| POST   | `/auth/login`    | Obtain JWT (7d expiry) for subsequent calls. |
+
+### Orders (protected)
+| Method | Endpoint      | Description |
+|--------|---------------|-------------|
+| GET    | `/orders`     | List orders for authenticated user. |
+| POST   | `/orders`     | Create order from cart payload. |
+
+> **JWT Handling:** Token is returned from `/auth/login` and must be sent as `Authorization: Bearer <token>`. Token payload contains `id` and `role` only. No refresh endpoint yet; implement silent re-login before expiry.
 
 > **Tip:** Cache `/categories` aggressively—it rarely changes.
 
@@ -96,7 +103,56 @@
 
 ---
 
-## 4. 🖼️ Image Strategy (VERY IMPORTANT)
+## 4. 🔐 Auth Flows (Signup & Login)
+
+### POST /auth/register
+- **Body:** `{ "name": string (2-80 chars), "email": string (valid email), "password": string (min 8 chars) }`
+- **Response 201:**
+```json
+{ "id": 42, "email": "jane@justgold.com", "role": "customer" }
+```
+- **Error 400:** `{ "message": "Email already exists" }` (email uniqueness enforced at DB).
+- **Notes:** Password is stored as bcrypt hash (12 rounds). No token is returned on register—login afterwards.
+
+### POST /auth/login
+- **Body:** `{ "email": string, "password": string }`
+- **Response 200:**
+```json
+{ "token": "<jwt>" }
+```
+- **Error 401:** `{ "message": "Invalid credentials" }`
+- **Token:** HS256 JWT, 7d expiry, payload `{ id, role }`.
+- **Send with requests:** `Authorization: Bearer <token>` header for all protected endpoints.
+
+### Client usage template (TypeScript)
+```typescript
+type LoginResponse = { token: string };
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  return fetchJSON<LoginResponse>(`/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+}
+
+export async function register(name: string, email: string, password: string) {
+  return fetchJSON<{ id: number; email: string; role: string }>(`/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password })
+  });
+}
+
+// Attach token to protected calls
+export function authHeaders(token: string) {
+  return { Authorization: `Bearer ${token}` };
+}
+```
+
+---
+
+## 5. 🖼️ Image Strategy (VERY IMPORTANT)
 
 1. **Media images (`media` array)**
    - These are fixed gallery assets: hero shots, lifestyle images, product videos.
@@ -118,7 +174,7 @@
 
 ---
 
-## 5. ⚡ Performance Playbook
+## 6. ⚡ Performance Playbook
 
 1. **Batch Requests**
    - Fetch categories and first product page in parallel.
@@ -141,7 +197,7 @@
 
 ---
 
-## 6. 🧭 Flow Examples
+## 7. 🧭 Flow Examples
 
 ### A. Home / Navigation
 1. `GET /categories`
@@ -161,7 +217,7 @@
 
 ---
 
-## 7. 🧩 Request Templates
+## 8. 🧩 Request Templates
 
 ```typescript
 // Example TypeScript helper
@@ -186,7 +242,7 @@ const product = await fetchJSON<ProductDetail>(`/products/${slug}`);
 
 ---
 
-## 8. 🛡️ Reliability & Fallbacks
+## 9. 🛡️ Reliability & Fallbacks
 
 - **Timeouts:** Abort fetches after 10 seconds to prevent hanging UI.
 - **Retry Strategy:** For idempotent GETs, retry once on network failure.
@@ -195,7 +251,7 @@ const product = await fetchJSON<ProductDetail>(`/products/${slug}`);
 
 ---
 
-## 9. ✅ Checklist for Frontend AI
+## 10. ✅ Checklist for Frontend AI
 
 - [ ] Use `/categories` to build navigation tree.
 - [ ] Fetch `/products?page=1` on landing page.
@@ -207,7 +263,7 @@ const product = await fetchJSON<ProductDetail>(`/products/${slug}`);
 
 ---
 
-## 10. 🧭 Need Something Else?
+## 11. 🧭 Need Something Else?
 
 - Want filtering/sorting parameters? Ping backend team.
 - Need GraphQL/SDK wrappers? Outline desired shape and we’ll provide it.

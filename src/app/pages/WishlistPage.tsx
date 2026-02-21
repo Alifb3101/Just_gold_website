@@ -13,16 +13,7 @@ export function WishlistPage() {
   const { convertPrice } = useApp();
 
   const handleAddToCart = (item: any) => {
-    addToCart({
-      id: item.id,
-      name: item.name,
-      image: item.image,
-      price: item.price,
-      originalPrice: item.originalPrice,
-      category: item.category,
-      inStock: item.inStock,
-      maxQuantity: 10,
-    });
+    addToCart(String(item.id), 1, { name: item.name, image: item.image });
   };
 
   const handleAddAllToCart = () => {
@@ -118,7 +109,7 @@ export function WishlistPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  removeFromWishlist(item.id);
+                  removeFromWishlist(String(item.id));
                 }}
                 className="absolute top-3 right-3 z-20 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-md group"
               >
@@ -153,7 +144,7 @@ export function WishlistPage() {
                 <p className="text-xs text-[#D4AF37] mb-1 font-medium">{item.category}</p>
 
                 {/* Product Name */}
-                <h3 className="font-medium text-[#3E2723] mb-2 line-clamp-2 group-hover:text-[#D4AF37] transition-colors min-h-[2.5rem]">
+                <h3 className="-[#3E2723] mb-2 line-clamp-2 group-hover:text-[#D4AF37] transition-colors min-h-[2.5rem]">
                   {item.name}
                 </h3>
 

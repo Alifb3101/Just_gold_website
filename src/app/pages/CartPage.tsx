@@ -16,24 +16,12 @@ export function CartPage() {
   const [showPromoInput, setShowPromoInput] = useState(false);
 
   const shipping = subtotal > 500 ? 0 : 25;
-  const tax = subtotal * 0.05; // 5% VAT for UAE
   const discountAmount = (subtotal * discount) / 100;
-  const total = subtotal + shipping + tax - discountAmount;
+  const total = subtotal + shipping - discountAmount;
 
   const handleMoveToWishlist = (item: any) => {
-    addToWishlist({
-      id: item.id,
-      name: item.name,
-      image: item.image,
-      price: item.price,
-      originalPrice: item.originalPrice,
-      category: item.category,
-      rating: 4,
-      reviews: 100,
-      inStock: item.inStock,
-      addedDate: new Date().toISOString(),
-    });
-    removeFromCart(item.id);
+    addToWishlist(String(item.id), { name: item.name, image: item.image });
+    removeFromCart(String(item.id));
   };
 
   const handleApplyPromo = () => {
@@ -55,11 +43,11 @@ export function CartPage() {
           </h2>
           <p className="text-gray-600 mb-8">Let's fill it with golden beauty!</p>
           <Link to="/" className="inline-block bg-[#D4AF37] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#C4A037] transition-colors">
-            Start Shopping
+            Start Shopping 
           </Link>
         </div>
       </div>
-    );
+    ); 
   }
 
   return (
@@ -130,7 +118,7 @@ export function CartPage() {
                           {/* Actions */}
                           <div className="flex items-center gap-4">
                             <button
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => removeFromCart(String(item.id))}
                               className="text-sm text-gray-600 hover:text-red-500 underline"
                             >
                               Remove
@@ -150,8 +138,8 @@ export function CartPage() {
                           {/* Quantity Selector */}
                           <QuantitySelector
                             quantity={item.quantity}
-                            onIncrease={() => updateQuantity(item.id, item.quantity + 1)}
-                            onDecrease={() => updateQuantity(item.id, item.quantity - 1)}
+                            onIncrease={() => updateQuantity(String(item.id), item.quantity + 1)}
+                            onDecrease={() => updateQuantity(String(item.id), item.quantity - 1)}
                             max={item.maxQuantity}
                             size="sm"
                           />
@@ -225,10 +213,7 @@ export function CartPage() {
                     Add {convertPrice(500 - subtotal)} more for FREE shipping!
                   </p>
                 )}
-                <div className="flex justify-between text-gray-700">
-                  <span>Tax (VAT 5%):</span>
-                  <span className="font-semibold">{convertPrice(tax)}</span>
-                </div>
+                <p className="text-xs text-gray-500">All prices include VAT.</p>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({discount}%):</span>

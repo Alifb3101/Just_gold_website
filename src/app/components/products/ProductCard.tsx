@@ -14,6 +14,7 @@ interface ProductCardProps {
     reviews: number;
     badge?: string;
     slug?: string;
+    description?: string;
   };
 }
 
@@ -75,10 +76,19 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
       </div>
 
       {/* Product Info */}
-      <div className="p-4">
-        <h3 className="font-medium text-[#3E2723] mb-2 line-clamp-2 group-hover:text-[#D4AF37] transition-colors">
+      <div className="p-4 space-y-2">
+        <h3
+          className="font-bold text-lg md:text-xl text-[#3E2723] leading-tight line-clamp-2 group-hover:text-[#D4AF37] transition-colors"
+          style={{ fontWeight: 700 }}
+        >
           {product.name}
         </h3>
+
+        {product.description ? (
+          <p className="text-sm text-gray-600 leading-snug line-clamp-2 min-h-[2.5rem]">
+            {product.description}
+          </p>
+        ) : null}
 
         {/* Rating */}
         <div className="flex items-center gap-2 mb-2">

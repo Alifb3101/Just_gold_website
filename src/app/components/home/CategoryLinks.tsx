@@ -5,36 +5,42 @@ import { ChevronLeft, ChevronRight, Sparkles, Eye, Circle, Brush, Gift, Star } f
 
 const categories = [
   {
+    id: 6,
     name: 'Lips',
     icon: Circle,
     productCount: 24,
     image: 'https://images.unsplash.com/photo-1581713845245-ca131fdb3064?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
   },
   {
+    id: 5,
     name: 'Eyes',
     icon: Eye,
     productCount: 32,
     image: 'https://images.unsplash.com/photo-1542833807-ad5af0977050?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
   },
   {
+    id: 4,
     name: 'Face',
     icon: Sparkles,
     productCount: 28,
     image: 'https://images.unsplash.com/photo-1550281378-521929a11c42?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
   },
   {
-    name: 'Tools & Brushes',
+    id: 7,
+    name: 'Brushes',
     icon: Brush,
     productCount: 18,
     image: 'https://images.unsplash.com/photo-1680244169777-a3d7d758a264?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
   },
   {
-    name: 'Kits & Sets',
+    id: 8,
+    name: 'Makeup Kits',
     icon: Gift,
     productCount: 15,
     image: 'https://images.unsplash.com/photo-1602532381225-eec578361933?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
   },
   {
+    id: 3,
     name: 'Best Sellers',
     icon: Star,
     productCount: 20,
@@ -56,7 +62,7 @@ export function CategoryLinks() {
   };
 
   return (
-    <section className="bg-white relative mt-0 sm:mt-6">
+    <section className="bg-white relative py-3">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop Navigation Arrows */}
         <div className="hidden lg:block">
@@ -92,9 +98,9 @@ export function CategoryLinks() {
                   viewport={{ once: true }}
                   className="group cursor-pointer flex-shrink-0"
                 >
-                  <Link to="/shop">
+                  <Link to={`/shop?category=${category.id}`}>
                     {/* Category Card */}
-                    <div className="w-[140px] sm:w-[160px] md:w-[180px] lg:w-[185px] xl:w-[220px] h-[180px] sm:h-[230px] md:h-[260px] lg:h-[270px] xl:h-[280px] bg-gradient-to-br from-[#F5E6D3] to-[#FAF3E0] rounded-xl border border-[#D4AF37]/30 overflow-hidden relative hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                    <div className="w-[140px] sm:w-[160px] md:w-[180px] lg:w-[185px] xl:w-[220px] h-[210px] sm:h-[230px] md:h-[260px] lg:h-[270px] xl:h-[280px] bg-gradient-to-br from-[#F5E6D3] to-[#FAF3E0] rounded-xl border border-[#D4AF37]/30 overflow-hidden relative hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                       {/* Gold shimmer effect */}
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 

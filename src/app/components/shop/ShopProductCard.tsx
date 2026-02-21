@@ -33,8 +33,8 @@ export const ShopProductCard = React.memo(function ShopProductCard({
   const hoverImage = product.hoverImageUrl || product.alternateImage;
   const hasHoverImage = Boolean(hoverImage);
 
-  const numericId = Number(product.id);
-  const isWishlisted = isInWishlist(numericId);
+  const variantId = String(product.id);
+  const isWishlisted = isInWishlist(variantId);
   const rating = product.rating ?? 0;
   const reviews = product.reviews ?? 0;
   const productPath = useMemo(() => {
@@ -44,15 +44,9 @@ export const ShopProductCard = React.memo(function ShopProductCard({
 
   const handleAddToCart = async () => {
     setIsAdding(true);
-    addToCart({
-      id: numericId,
+    addToCart(variantId, 1, {
       name: product.name,
       image: baseImage,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      category: product.category ?? 'All',
-      inStock: product.inStock ?? true,
-      maxQuantity: 10,
     });
     setTimeout(() => setIsAdding(false), 1000);
   };
@@ -61,20 +55,9 @@ export const ShopProductCard = React.memo(function ShopProductCard({
     e.preventDefault();
     e.stopPropagation();
     if (isWishlisted) {
-      removeFromWishlist(numericId);
+      removeFromWishlist(variantId);
     } else {
-      addToWishlist({
-        id: numericId,
-        name: product.name,
-        image: baseImage,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        category: product.category ?? 'All',
-        rating,
-        reviews,
-        inStock: product.inStock ?? true,
-        addedDate: new Date().toISOString(),
-      });
+      addToWishlist(variantId, { name: product.name, image: baseImage });
     }
   };
 

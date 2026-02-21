@@ -83,6 +83,7 @@ export function MobileNav({ isOpen, onClose, headerOffset = 110 }: MobileNavProp
           width: drawerWidth,
           top: headerOffset,
           height: `calc(100vh - ${headerOffset}px)`,
+          fontFamily: "'Montserrat', Arial, sans-serif",
         }}
       >
         {/* ✅ Drawer Top Bar (NO MENU TEXT) */}

@@ -16,6 +16,7 @@ const FilterSidebarLazy = React.lazy(() =>
 
 const DEFAULT_FILTERS: ProductFilters = {
   category: null,
+  search: null,
   minPrice: null,
   maxPrice: null,
   color: null,
@@ -26,6 +27,7 @@ const DEFAULT_FILTERS: ProductFilters = {
 function serializeFilters(filters: ProductFilters) {
   return {
     category: filters.category,
+    search: filters.search,
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
     color: filters.color,
@@ -47,16 +49,18 @@ export function ProductPage() {
   const urlFilters = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get('category');
+    const search = params.get('search');
     return {
       category: category?.trim() || null,
+      search: search?.trim() || null,
     };
   }, [location.search]);
 
   useEffect(() => {
     setFilters((prev) => {
-      if (prev.category === urlFilters.category) return prev;
+      if (prev.category === urlFilters.category && prev.search === urlFilters.search) return prev;
       preserveScrollRef.current = window.scrollY;
-      return { ...prev, category: urlFilters.category };
+      return { ...prev, category: urlFilters.category, search: urlFilters.search };
     });
   }, [urlFilters]);
 
@@ -76,6 +80,7 @@ export function ProductPage() {
       getProducts(
         {
           ...filters,
+          search: filters.search,
           cursor: pageParam as number | null | undefined,
         },
         signal

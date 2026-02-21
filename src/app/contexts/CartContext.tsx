@@ -1,104 +1,214 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { addToCart as apiAddToCart, getCart as apiGetCart, removeFromCart as apiRemoveFromCart, updateQuantity as apiUpdateQuantity } from '@/services/cartService';
+import type { CartResponse, CartItemApi } from '@/services/cartService';
+import { useAuth } from './AuthContext';
+import { ApiError } from '@/app/api/http';
 
 export interface CartItem {
-  id: number;
+  id: string;
+  productId: string;
   name: string;
   image: string;
   price: number;
+  priceAtAdded: number;
   originalPrice?: number;
-  category: string;
-  shade?: string;
+  category?: string;
+  shade?: string | null;
+  size?: string | null;
   quantity: number;
   inStock: boolean;
   maxQuantity: number;
+  stock: number;
+  subtotal: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Omit<CartItem, 'quantity'>, quantity?: number) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
-  clearCart: () => void;
+  addToCart: (productVariantId: string, quantity?: number, meta?: { name?: string; image?: string }) => Promise<void>;
+  removeFromCart: (variantId: string) => Promise<void>;
+  updateQuantity: (variantId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   cartCount: number;
   subtotal: number;
   applyPromoCode: (code: string) => boolean;
   promoCode: string | null;
   discount: number;
+  isLoading: boolean;
+  refresh: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const mapCartItem = (item: CartItemApi): CartItem => ({
+  id: String(item.product_variant_id),
+  productId: String(item.product_id),
+  name: item.product_name,
+  image: item.main_image || item.secondary_image || '',
+  price: Number(item.current_price),
+  priceAtAdded: Number(item.price_at_added),
+  originalPrice: item.price_at_added !== item.current_price ? Number(item.price_at_added) : undefined,
+  category: 'Beauty',
+  shade: item.color,
+  size: item.size,
+  quantity: item.quantity,
+  inStock: item.stock > 0,
+  maxQuantity: item.stock,
+  stock: item.stock,
+  subtotal: Number(item.subtotal),
+  createdAt: item.created_at,
+  updatedAt: item.updated_at,
+});
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { token, logout } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [totals, setTotals] = useState<{ subtotal: number; items: number }>({ subtotal: 0, items: 0 });
   const [promoCode, setPromoCode] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const addToCart = (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
-    setItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        const newQuantity = Math.min(existing.quantity + quantity, existing.maxQuantity);
-        toast.success(`Updated ${product.name} quantity`);
-        return prev.map(item =>
-          item.id === product.id ? { ...item, quantity: newQuantity } : item
-        );
+  const syncFromResponse = useCallback((data?: Partial<CartResponse> | null) => {
+    if (!data || !Array.isArray(data.items)) {
+      // If the API did not return the cart payload, signal the caller to refetch.
+      return false;
+    }
+
+    const nextTotals = data.totals ?? { subtotal: 0, items: 0 };
+    setItems(data.items.map(mapCartItem));
+    setTotals({ subtotal: Number(nextTotals.subtotal ?? 0), items: Number(nextTotals.items ?? 0) });
+    return true;
+  }, []);
+
+  const handleApiError = useCallback((err: unknown, action: string) => {
+    if (err instanceof ApiError && err.status === 401) {
+      toast.error('Session expired. Please login again.');
+      logout();
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Something went wrong';
+    toast.error(`${action} failed: ${message}`);
+  }, [logout]);
+
+  const refresh = useCallback(async () => {
+    if (!token) {
+      setItems([]);
+      setTotals({ subtotal: 0, items: 0 });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await apiGetCart(token);
+      syncFromResponse(data);
+    } catch (err) {
+      handleApiError(err, 'Fetch cart');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, syncFromResponse, handleApiError]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const addToCart = useCallback(async (productVariantId: string, quantity: number = 1, meta?: { name?: string; image?: string }) => {
+    if (!token) {
+      toast.error('Please login to add items to your cart');
+      return;
+    }
+    try {
+      const data = await apiAddToCart(token, productVariantId, quantity);
+      const updated = syncFromResponse(data);
+      if (!updated) {
+        await refresh();
       }
-      toast.success(`Added ${product.name} to cart`);
-      return [...prev, { ...product, quantity }];
-    });
-  };
+      if (meta?.name) {
+        toast.success(`Added ${meta.name} to cart`);
+      } else {
+        toast.success('Item added to cart');
+      }
+    } catch (err) {
+      handleApiError(err, 'Add to cart');
+    }
+  }, [token, syncFromResponse, handleApiError]);
 
-  const removeFromCart = (id: number) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-    toast.success('Item removed from cart');
-  };
+  const updateQuantity = useCallback(async (variantId: string, quantity: number) => {
+    if (!token) {
+      toast.error('Please login to update your cart');
+      return;
+    }
+    try {
+      const data = await apiUpdateQuantity(token, variantId, quantity);
+      const updated = syncFromResponse(data);
+      if (!updated) {
+        await refresh();
+      }
+    } catch (err) {
+      handleApiError(err, 'Update quantity');
+    }
+  }, [token, syncFromResponse, handleApiError]);
 
-  const updateQuantity = (id: number, quantity: number) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, quantity: Math.max(1, Math.min(quantity, item.maxQuantity)) } : item
-      )
-    );
-  };
+  const removeFromCart = useCallback(async (variantId: string) => {
+    if (!token) {
+      toast.error('Please login to update your cart');
+      return;
+    }
+    try {
+      const data = await apiRemoveFromCart(token, variantId);
+      const updated = syncFromResponse(data);
+      if (!updated) {
+        await refresh();
+      }
+      toast.success('Item removed from cart');
+    } catch (err) {
+      handleApiError(err, 'Remove from cart');
+    }
+  }, [token, syncFromResponse, handleApiError]);
 
-  const clearCart = () => {
-    setItems([]);
-    setPromoCode(null);
-    setDiscount(0);
-  };
+  const clearCart = useCallback(async () => {
+    if (!token) {
+      setItems([]);
+      setTotals({ subtotal: 0, items: 0 });
+      return;
+    }
+    const variants = items.map((item) => item.id);
+    for (const id of variants) {
+      try {
+        const data = await apiRemoveFromCart(token, id);
+        const updated = syncFromResponse(data);
+        if (!updated) {
+          await refresh();
+          break;
+        }
+      } catch (err) {
+        handleApiError(err, 'Clear cart');
+        break;
+      }
+    }
+  }, [token, items, syncFromResponse, handleApiError, refresh]);
 
   const applyPromoCode = (code: string): boolean => {
-    // Mock promo codes
     const validCodes: { [key: string]: number } = {
-      'GOLD10': 10,
-      'GOLD20': 20,
-      'WELCOME15': 15,
+      GOLD10: 10,
+      GOLD20: 20,
+      WELCOME15: 15,
     };
 
-    if (validCodes[code.toUpperCase()]) {
-      setPromoCode(code.toUpperCase());
-      setDiscount(validCodes[code.toUpperCase()]);
-      toast.success(`Promo code applied! ${validCodes[code.toUpperCase()]}% off`);
+    const normalized = code.toUpperCase();
+    if (validCodes[normalized]) {
+      setPromoCode(normalized);
+      setDiscount(validCodes[normalized]);
+      toast.success(`Promo code applied! ${validCodes[normalized]}% off`);
       return true;
     }
     toast.error('Invalid promo code');
     return false;
   };
 
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('cart');
-    if (saved) {
-      setItems(JSON.parse(saved));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+  const cartCount = useMemo(() => totals.items ?? items.reduce((sum, item) => sum + item.quantity, 0), [totals.items, items]);
+  const subtotal = useMemo(() => Number(totals.subtotal ?? items.reduce((sum, item) => sum + item.price * item.quantity, 0)), [totals.subtotal, items]);
 
   return (
     <CartContext.Provider
@@ -113,6 +223,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         applyPromoCode,
         promoCode,
         discount,
+        isLoading,
+        refresh,
       }}
     >
       {children}

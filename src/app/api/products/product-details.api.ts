@@ -9,8 +9,13 @@ export async function fetchProductByIdSlug(
   signal?: AbortSignal
 ): Promise<Product> {
   const slugSegment = slug ? `${id}-${slug}` : String(id);
-  const apiProduct = await fetchJson<ApiProduct>(`/product/${slugSegment}`, {
+  const url = `/product/${slugSegment}`;
+  console.debug('[product details] fetch', url);
+  const apiProduct = await fetchJson<ApiProduct>(url, {
     signal,
+  }).catch((err) => {
+    console.error('[product details] fetch error', { url, err });
+    throw err;
   });
   return mapApiProductToProduct(apiProduct);
 }

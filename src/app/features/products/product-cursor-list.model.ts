@@ -4,6 +4,7 @@ export type ProductSort = 'price_low' | 'price_high' | 'newest' | 'popular';
 
 export type ProductFilters = {
   category: string | number | null;
+  search: string | null;
   minPrice: number | null;
   maxPrice: number | null;
   color: string | null;

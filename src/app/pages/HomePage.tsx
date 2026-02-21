@@ -7,6 +7,7 @@ import { PromoBanner } from '@/app/components/home/PromoBanner';
 import { InstagramFeed } from '@/app/components/home/InstagramFeed';
 import { Newsletter } from '@/app/components/home/Newsletter';
 import { BrandMarqueePage } from '@/app/components/home/BrandMarqueePage';
+import DealOfTheDay from '@/app/components/home/deal_of_the_day';
 
 export function HomePage() {
   return (
@@ -25,6 +26,9 @@ export function HomePage() {
 
       {/* Best Sellers */}
       <BestSellers />
+
+      {/* Deal of the Day */}
+      <DealOfTheDay />
 
       {/* Promotional Banner */}
       <PromoBanner />

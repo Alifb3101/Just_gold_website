@@ -11,9 +11,9 @@ export function Footer() {
     'Face',
     'Eyes',
     'Lips',
-    'Tools & Brushes',
-    'Kits & Sets',
-    'Gifts'
+    'Brushes',
+    'Makeup Kits',
+    'Giftsets'
   ];
 
   const aboutLinks = [
@@ -193,8 +193,27 @@ export function Footer() {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Logo */}
-            <div className="font-['Playfair_Display'] text-2xl font-bold gold-gradient-text">
-              Just Gold
+            <div className="flex items-center justify-center">
+              <div
+                aria-label="Just Gold logo"
+                className="h-10 w-28"
+                style={{
+                  background:
+                    "linear-gradient(125deg, #c89a2e 0%, #d9b54a 28%, #f3e3c5 55%, #fff6e6 75%, #d4af37 100%), radial-gradient(120% 120% at 20% 15%, rgba(255,255,255,0.35), transparent 55%)",
+                  maskImage:
+                    "url('https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png')",
+                  WebkitMaskImage:
+                    "url('https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png')",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskPosition: "center",
+                  WebkitMaskPosition: "center",
+                  maskSize: "contain",
+                  WebkitMaskSize: "contain",
+                  filter:
+                    "drop-shadow(0 6px 18px rgba(212, 175, 55, 0.28)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))",
+                }}
+              />
             </div>
 
             {/* Payment Icons */}

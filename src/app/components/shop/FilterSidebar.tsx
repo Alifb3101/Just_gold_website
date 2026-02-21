@@ -80,6 +80,7 @@ export const FilterSidebar = React.memo(function FilterSidebar({ filters, onChan
     const preservedCategory = selectedCategoryId ?? filters.category;
     onChange({
       category: preservedCategory,
+      search: filters.search,
       minPrice: null,
       maxPrice: null,
       color: null,

@@ -45,6 +45,7 @@ export interface Product {
   price: number;
   currency: string;
   description: string;
+  categoryId?: number;
   baseStock?: number;
   images: ProductImage[];
   shades: ProductShade[];

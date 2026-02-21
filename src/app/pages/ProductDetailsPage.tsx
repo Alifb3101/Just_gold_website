@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, Star, ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react';
 import { fetchProductByIdSlug } from '@/app/api/products/product-details.api';
 import type { Product, ProductImage, ProductShade } from '@/app/features/products/product-details.model';
 import { useCart } from '@/app/contexts/CartContext';
+import { useCategories } from '@/store/categoryStore';
 
 const PANEL_ORDER: Array<'hex' | 'gradient' | 'image'> = ['hex', 'gradient', 'image'];
 const PANEL_LABELS: Record<'hex' | 'gradient' | 'image', string> = {
@@ -25,7 +26,7 @@ type ShadeSwatchProps = {
 
 const ShadeSwatch = React.memo(function ShadeSwatch({ shade, isSelected, size, onSelect }: ShadeSwatchProps) {
   const dimensionClass = size === 'sm' ? 'w-11 h-11' : 'w-[3.25rem] h-[3.25rem]';
-  const insetClass = size === 'sm' ? 'inset-[2px]' : 'inset-[3px]';
+  const paddingClass = size === 'sm' ? 'p-[2px]' : 'p-[3px]';
   const panelType = shade.colorPanelType ?? 'hex';
   const panelValue = shade.colorPanelValue ?? shade.colorHex ?? '';
   const swatchStyle =
@@ -37,7 +38,7 @@ const ShadeSwatch = React.memo(function ShadeSwatch({ shade, isSelected, size, o
     <button
       type="button"
       onClick={() => onSelect(shade.id)}
-      className={`group relative ${dimensionClass} rounded-full border transition-transform duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#D4AF37] ${
+      className={`group relative ${dimensionClass} ${paddingClass} shrink-0 rounded-full border transition-transform duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#D4AF37] ${
         isSelected
           ? 'border-[#D4AF37] shadow-[0_10px_30px_rgba(212,175,55,0.35)] scale-110'
           : 'border-gray-300 hover:border-[#D4AF37] hover:scale-105'
@@ -45,18 +46,20 @@ const ShadeSwatch = React.memo(function ShadeSwatch({ shade, isSelected, size, o
       aria-pressed={isSelected}
       title={shade.name}
     >
-      {panelType === 'image' && panelValue ? (
-        <img
-          src={panelValue}
-          alt={shade.name}
-          className={`absolute ${insetClass} rounded-full object-cover`}
-          loading="lazy"
-          decoding="async"
-        />
-      ) : (
-        <span className={`absolute ${insetClass} rounded-full`} style={swatchStyle} />
-      )}
-      <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden />
+      <span className="relative block h-full w-full overflow-hidden rounded-full">
+        {panelType === 'image' && panelValue ? (
+          <img
+            src={panelValue}
+            alt={shade.name}
+            className="h-full w-full rounded-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span className="block h-full w-full rounded-full" style={swatchStyle} />
+        )}
+        <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden />
+      </span>
     </button>
   );
 });
@@ -69,6 +72,7 @@ ShadeSwatch.displayName = 'ShadeSwatch';
 export function ProductDetailsPage() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const { addToCart } = useCart();
+  const { categories } = useCategories();
 
   // ============================================
   // 🎯 STATE MANAGEMENT
@@ -81,13 +85,14 @@ export function ProductDetailsPage() {
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   const [selectedFinishType, setSelectedFinishType] = useState('matte');
   const selectedShadeRef = useRef('');
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   const { productId, slug } = useMemo(() => {
-    const match = (productSlug ?? '').match(/^(\d+)-(.*)$/);
-    if (match) {
-      return { productId: match[1], slug: match[2] };
-    }
-    return { productId: productSlug ?? '', slug: undefined };
+    const raw = productSlug ?? '';
+    const [id, ...rest] = raw.split('-');
+    const composedSlug = rest.join('-');
+    if (id) return { productId: id, slug: composedSlug || undefined };
+    return { productId: raw, slug: undefined };
   }, [productSlug]);
 
   const {
@@ -204,6 +209,20 @@ export function ProductDetailsPage() {
     selectedShadeRef.current = selectedShade;
   }, [selectedShade]);
 
+  const categoryPath = useMemo(() => {
+    if (!product?.categoryId) return null;
+    for (const cat of categories) {
+      if (cat.id === product.categoryId) {
+        return { parent: cat, sub: null as { id: number; name: string } | null };
+      }
+      const match = cat.subcategories?.find((sub) => sub.id === product.categoryId);
+      if (match) {
+        return { parent: cat, sub: match };
+      }
+    }
+    return null;
+  }, [product?.categoryId, categories]);
+
   const handleQuantityChange = (action: 'increase' | 'decrease') => {
     if (action === 'increase') {
       setQuantity((prev) => (maxStock ? Math.min(prev + 1, maxStock) : prev + 1));
@@ -224,17 +243,12 @@ export function ProductDetailsPage() {
       || '';
 
     addToCart(
+      String(selectedShadeData?.id ?? product.id),
+      quantity,
       {
-        id: Number(selectedShadeData?.id ?? product.id),
         name: selectedShadeData ? `${product.name} - ${selectedShadeData.name}` : product.name,
         image: imageCandidate,
-        price: effectivePrice,
-        originalPrice,
-        category: 'Beauty',
-        inStock: maxStock > 0,
-        maxQuantity: maxStock || 10,
-      },
-      quantity
+      }
     );
   };
 
@@ -264,6 +278,36 @@ export function ProductDetailsPage() {
   const handleMediaSelect = (index: number) => {
     const maxIndex = Math.max(0, gallery.length - 1);
     setSelectedImage(Math.max(0, Math.min(index, maxIndex)));
+  };
+
+  const changeImageBy = (delta: number) => {
+    if (!gallery.length) return;
+    const next = (selectedImage + delta + gallery.length) % gallery.length;
+    handleMediaSelect(next);
+  };
+
+  const handleSwipeStart = (x: number, y: number) => {
+    swipeStartRef.current = { x, y, time: Date.now() };
+  };
+
+  const handleSwipeEnd = (x: number, y: number) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+
+    const dx = x - start.x;
+    const dy = y - start.y;
+    const dt = Date.now() - start.time;
+
+    if (dt > 800) return; // ignore long presses
+    if (Math.abs(dx) < 40) return; // need meaningful horizontal move
+    if (Math.abs(dy) > 80) return; // ignore mostly vertical swipes
+
+    if (dx < 0) {
+      changeImageBy(1);
+    } else {
+      changeImageBy(-1);
+    }
   };
 
   const getThumbnailSrc = (image: ProductImage | null) => {
@@ -322,23 +366,50 @@ export function ProductDetailsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Breadcrumb - Desktop Only */}
-      <div className="hidden md:block bg-[#FFF9F0] border-b border-gray-200">
+      <nav className="hidden md:block bg-[#FFF9F0] border-b border-gray-200" aria-label="Breadcrumb">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-3">
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <span className="hover:text-[#D4AF37] cursor-pointer">Home</span>
-            <span>/</span>
-            <span className="hover:text-[#D4AF37] cursor-pointer">Makeup</span>
-            <span>/</span>
-            <span className="hover:text-[#D4AF37] cursor-pointer">EVEN MORE MAGIC!</span>
-            <span>/</span>
-            <span className="hover:text-[#D4AF37] cursor-pointer">Makeup Collections</span>
-            <span>/</span>
-            <span className="hover:text-[#D4AF37] cursor-pointer">Airbrush Effect</span>
-            <span>/</span>
-            <span className="text-[#D4AF37] uppercase font-semibold">AIRBRUSH FLAWLESS BLUR CONCEALER</span>
-          </div>
+          <ol className="flex items-center gap-2 text-xs text-gray-600">
+            <li>
+              <Link to="/" className="hover:text-[#D4AF37]">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            {categoryPath ? (
+              <>
+                <li>
+                  <Link to={`/shop?category=${categoryPath.parent.id}`} className="hover:text-[#D4AF37]">
+                    {categoryPath.parent.name}
+                  </Link>
+                </li>
+                <li aria-hidden="true">/</li>
+                {categoryPath.sub && (
+                  <>
+                    <li>
+                      <Link to={`/shop?category=${categoryPath.sub.id}`} className="hover:text-[#D4AF37]">
+                        {categoryPath.sub.name}
+                      </Link>
+                    </li>
+                    <li aria-hidden="true">/</li>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link to="/shop" className="hover:text-[#D4AF37]">
+                    Shop
+                  </Link>
+                </li>
+                <li aria-hidden="true">/</li>
+              </>
+            )}
+            <li className="text-[#D4AF37] uppercase font-semibold" aria-current="page">
+              {product.name}
+            </li>
+          </ol>
         </div>
-      </div>
+      </nav>
 
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-4 md:py-8 lg:py-12 tablet-landscape-container">
         
@@ -353,15 +424,35 @@ export function ProductDetailsPage() {
             
             {/* Mobile Layout */}
             <div className="lg:hidden">
+
+
               {/* 1. Small Title */}
-              <h1 className="text-sm font-semibold text-[#3E2723] mb-3 uppercase">
+              {/* <h1 className="text-sm font-semibold text-[#3E2723] mb-3 uppercase">
                 {product.name}
-              </h1>
+              </h1> */}
+
+
+
+    <h2 className="product-title text-[#3E2723] mb-2">
+                {product.name}
+              </h2>
+
+                  {/* 5. Description */}
+              <p className="product-description text-gray-700 mb-4">
+                {product.description}
+              </p>
               
               {/* 2. Main Image */}
               <div
                 className="bg-white rounded-xl overflow-hidden border border-gray-100 mb-3"
-                style={{ aspectRatio: '2 / 3' }}
+                style={{ aspectRatio: '1 / 1' }}
+                onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX, e.touches[0].clientY)}
+                onTouchEnd={(e) => {
+                  const touch = e.changedTouches[0];
+                  if (touch) handleSwipeEnd(touch.clientX, touch.clientY);
+                }}
+                onMouseDown={(e) => handleSwipeStart(e.clientX, e.clientY)}
+                onMouseUp={(e) => handleSwipeEnd(e.clientX, e.clientY)}
               >
                 <div className="tablet-landscape-gallery">
                 {currentImage ? (
@@ -400,7 +491,7 @@ export function ProductDetailsPage() {
                       <button
                         key={index}
                         onClick={() => handleMediaSelect(index)}
-                        className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                        className={`relative w-18 h-18 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 m-2 p-1  ${
                           selectedImage === index
                             ? 'border-[#D4AF37] ring-2 ring-[#D4AF37] scale-105'
                             : 'border-gray-200 opacity-60 hover:opacity-100'
@@ -429,30 +520,25 @@ export function ProductDetailsPage() {
               )}
 
               {/* 4. Big Title */}
-              <h2 className="text-xl sm:text-2xl font-bold text-[#3E2723] mb-2 leading-tight">
-                {product.name}
-              </h2>
-              <p className="text-base text-[#D4AF37] font-semibold mb-4">
+          
+              <p className="meta-text text-[#D4AF37] font-semibold mb-4">
                 {product.productModelNo}
               </p>
 
-              {/* 5. Description */}
-              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                {product.description}
-              </p>
+         
 
               {/* 6. Price */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-500">{product.currency}</span>
-                  <span className="text-3xl font-bold text-[#3E2723]">
+                  <span className="review-meta text-gray-500">{product.currency}</span>
+                  <span className="product-price text-[#3E2723]">
                     {effectivePrice.toFixed(2)}
                   </span>
                 </div>
                 {originalPrice && (
                   <div className="flex items-center gap-2">
-                    <span className="text-base text-gray-400 line-through">{originalPrice.toFixed(2)}</span>
-                    <span className="text-sm font-semibold text-red-600">-{discountPercent}%</span>
+                    <span className="meta-text text-gray-400 line-through">{originalPrice.toFixed(2)}</span>
+                    <span className="review-meta font-semibold text-red-600">-{discountPercent}%</span>
                   </div>
                 )}
               </div>
@@ -563,36 +649,36 @@ export function ProductDetailsPage() {
 
             {/* Desktop Layout */}
             <div className="hidden lg:block">
-              <h1 className="text-xl md:text-2xl lg:text-3xl xl:text-[32px] font-bold text-[#3E2723] mb-1 md:mb-2 lg:mb-3 leading-tight tracking-tight">
+              <h1 className="product-title text-[#3E2723] mb-1 md:mb-2 lg:mb-3">
                 {product.name}
               </h1>
-              <p className="text-base md:text-lg lg:text-xl text-[#D4AF37] font-semibold mb-3 md:mb-4 lg:mb-5">
+              <p className="meta-text text-[#D4AF37] font-semibold mb-3 md:mb-4 lg:mb-5">
                 {product.productModelNo ? `Model No: ${product.productModelNo}` : product.subtitle}
               </p>
 
               {/* Description */}
-              <p className="text-sm md:text-base lg:text-[15px] text-gray-600 mb-4 md:mb-6 lg:mb-7 leading-relaxed">
+              <p className="product-description text-gray-700 mb-4 md:mb-6 lg:mb-7">
                 {product.description}
               </p>
 
               {/* Price */}
               <div className="flex items-center gap-4 mb-4 md:mb-6 lg:mb-8">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-gray-500">{product.currency}</span>
-                  <span className="text-3xl font-bold text-[#3E2723]">
+                  <span className="review-meta text-gray-500">{product.currency}</span>
+                  <span className="product-price text-[#3E2723]">
                     {effectivePrice.toFixed(2)}
                   </span>
                 </div>
                 {originalPrice && (
                   <div className="flex items-center gap-2">
-                    <span className="text-base text-gray-400 line-through">{originalPrice.toFixed(2)}</span>
-                    <span className="text-sm font-semibold text-red-600">-{discountPercent}%</span>
+                    <span className="meta-text text-gray-400 line-through">{originalPrice.toFixed(2)}</span>
+                    <span className="review-meta font-semibold text-red-600">-{discountPercent}%</span>
                   </div>
                 )}
                 {maxStock > 0 ? (
-                  <span className="text-sm text-green-600 font-semibold">In stock: {maxStock}</span>
+                  <span className="review-meta text-green-600 font-semibold">In stock: {maxStock}</span>
                 ) : (
-                  <span className="text-sm text-red-600 font-semibold">Out of stock</span>
+                  <span className="review-meta text-red-600 font-semibold">Out of stock</span>
                 )}
               </div>
 
@@ -762,7 +848,14 @@ export function ProductDetailsPage() {
               {/* Main Display Area */}
               <div
                 className="flex-1 bg-white rounded-2xl overflow-hidden max-h-[720px] flex items-center justify-center"
-                style={{ aspectRatio: '2 / 3' }}
+                style={{ aspectRatio: '1 / 1' }}
+                onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX, e.touches[0].clientY)}
+                onTouchEnd={(e) => {
+                  const touch = e.changedTouches[0];
+                  if (touch) handleSwipeEnd(touch.clientX, touch.clientY);
+                }}
+                onMouseDown={(e) => handleSwipeStart(e.clientX, e.clientY)}
+                onMouseUp={(e) => handleSwipeEnd(e.clientX, e.clientY)}
               >
                 {currentImage ? (
                   currentImage.type === 'video' ? (
@@ -796,7 +889,17 @@ export function ProductDetailsPage() {
             {/* Tablet Landscape: Horizontal Thumbnail + Main Image Layout */}
             <div className="tablet-landscape-layout" style={{display: 'none'}}>
               {/* Main Display Area */}
-              <div className="tablet-landscape-image flex items-center justify-center" style={{ aspectRatio: '2 / 3' }}>
+              <div
+                className="tablet-landscape-image flex items-center justify-center"
+                style={{ aspectRatio: '1 / 1' }}
+                onTouchStart={(e) => handleSwipeStart(e.touches[0].clientX, e.touches[0].clientY)}
+                onTouchEnd={(e) => {
+                  const touch = e.changedTouches[0];
+                  if (touch) handleSwipeEnd(touch.clientX, touch.clientY);
+                }}
+                onMouseDown={(e) => handleSwipeStart(e.clientX, e.clientY)}
+                onMouseUp={(e) => handleSwipeEnd(e.clientX, e.clientY)}
+              >
                 {currentImage ? (
                   currentImage.type === 'video' ? (
                     <video
@@ -937,7 +1040,7 @@ export function ProductDetailsPage() {
           {/* Reviews Header */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 md:mb-8">
             <div>
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#3E2723] mb-2">
+              <h2 className="product-title text-[#3E2723] mb-2">
                 Customer Reviews
               </h2>
               <div className="flex items-center gap-2 md:gap-3">
@@ -953,8 +1056,8 @@ export function ProductDetailsPage() {
                     />
                   ))}
                 </div>
-                <span className="font-semibold text-lg">{product.averageRating}</span>
-                <span className="text-gray-500">({product.totalReviews} reviews)</span>
+                <span className="review-meta font-semibold">{product.averageRating}</span>
+                <span className="review-meta text-gray-500">({product.totalReviews} reviews)</span>
               </div>
             </div>
             <button className="w-full md:w-auto px-4 md:px-6 py-2.5 md:py-3 border-2 border-[#D4AF37] text-[#D4AF37] rounded-lg text-sm md:text-base font-bold hover:bg-[#D4AF37] hover:text-white transition-all">
@@ -965,14 +1068,14 @@ export function ProductDetailsPage() {
           {/* Reviews List */}
           <div className="space-y-4 md:space-y-6">
             {product.reviews.length === 0 ? (
-              <p className="text-sm md:text-base text-gray-500">No reviews yet.</p>
+              <p className="review-meta text-gray-500">No reviews yet.</p>
             ) : (
               product.reviews.map((review) => (
                 <div key={review.id} className="border-b border-gray-200 pb-4 md:pb-6">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 md:mb-3 gap-2">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm md:text-base text-[#3E2723]">{review.name}</span>
+                        <span className="review-meta font-semibold text-[#3E2723]">{review.name}</span>
                         {review.verified && (
                           <span className="text-[10px] md:text-xs bg-green-100 text-green-700 px-2 py-0.5 md:py-1 rounded">
                             Verified Purchase
@@ -992,11 +1095,11 @@ export function ProductDetailsPage() {
                             />
                           ))}
                         </div>
-                        <span className="text-xs md:text-sm text-gray-500">{review.date}</span>
+                        <span className="review-meta text-gray-500">{review.date}</span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm md:text-base text-gray-700 leading-relaxed">{review.comment}</p>
+                  <p className="product-description text-gray-700">{review.comment}</p>
                 </div>
               ))
             )}

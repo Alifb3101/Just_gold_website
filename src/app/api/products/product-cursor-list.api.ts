@@ -17,6 +17,7 @@ export async function fetchProductCursorList(
   const params = new URLSearchParams();
 
   const category = toOptionalString(filters.category);
+  const search = toOptionalString(filters.search);
   const minPrice = toOptionalString(filters.minPrice);
   const maxPrice = toOptionalString(filters.maxPrice);
   const color = toOptionalString(filters.color);
@@ -24,6 +25,7 @@ export async function fetchProductCursorList(
   const sort = toOptionalString(filters.sort) ?? 'newest';
 
   if (category) params.set('category', category);
+  if (search) params.set('search', search);
   if (minPrice) params.set('minPrice', minPrice);
   if (maxPrice) params.set('maxPrice', maxPrice);
   if (color) params.set('color', color);

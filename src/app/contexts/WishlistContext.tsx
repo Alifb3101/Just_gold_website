@@ -1,65 +1,122 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { addToWishlist as apiAddToWishlist, getWishlist as apiGetWishlist, removeFromWishlist as apiRemoveFromWishlist } from '@/services/wishlistService';
+import type { WishlistItemApi, WishlistResponse } from '@/services/wishlistService';
+import { useAuth } from './AuthContext';
+import { ApiError } from '@/app/api/http';
 
 export interface WishlistItem {
-  id: number;
+  id: string;
+  productId: string;
   name: string;
   image: string;
   price: number;
-  originalPrice?: number;
-  category: string;
-  rating: number;
-  reviews: number;
+  category?: string;
+  rating?: number;
+  reviews?: number;
   inStock: boolean;
   addedDate: string;
 }
 
 interface WishlistContextType {
   items: WishlistItem[];
-  addToWishlist: (product: WishlistItem) => void;
-  removeFromWishlist: (id: number) => void;
-  isInWishlist: (id: number) => boolean;
+  addToWishlist: (productVariantId: string, meta?: { name?: string; image?: string }) => Promise<void>;
+  removeFromWishlist: (variantId: string) => Promise<void>;
+  isInWishlist: (variantId: string) => boolean;
   wishlistCount: number;
+  isLoading: boolean;
+  refresh: () => Promise<void>;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
+const mapWishlistItem = (item: WishlistItemApi, prevItems: WishlistItem[]): WishlistItem => {
+  const existing = prevItems.find((p) => p.id === String(item.product_variant_id));
+  return {
+    id: String(item.product_variant_id),
+    productId: String(item.product_id),
+    name: item.product_name,
+    image: existing?.image || '',
+    price: Number(item.current_price),
+    category: 'Beauty',
+    rating: existing?.rating ?? 0,
+    reviews: existing?.reviews ?? 0,
+    inStock: item.stock > 0,
+    addedDate: item.created_at,
+  };
+};
+
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const { token, logout } = useAuth();
   const [items, setItems] = useState<WishlistItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const addToWishlist = (product: WishlistItem) => {
-    setItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        toast.info(`${product.name} is already in your wishlist`);
-        return prev;
-      }
-      toast.success(`Added ${product.name} to wishlist`);
-      return [...prev, { ...product, addedDate: new Date().toISOString() }];
-    });
-  };
-
-  const removeFromWishlist = (id: number) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-    toast.success('Removed from wishlist');
-  };
-
-  const isInWishlist = (id: number) => {
-    return items.some(item => item.id === id);
-  };
-
-  const wishlistCount = items.length;
-
-  useEffect(() => {
-    const saved = localStorage.getItem('wishlist');
-    if (saved) {
-      setItems(JSON.parse(saved));
-    }
+  const syncFromResponse = useCallback((data?: Partial<WishlistResponse> | null) => {
+    const itemsArray = Array.isArray(data?.items) ? data.items : [];
+    setItems((prev) => itemsArray.map((item) => mapWishlistItem(item, prev)));
   }, []);
 
+  const handleApiError = useCallback((err: unknown, action: string) => {
+    if (err instanceof ApiError && err.status === 401) {
+      toast.error('Session expired. Please login again.');
+      logout();
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Something went wrong';
+    toast.error(`${action} failed: ${message}`);
+  }, [logout]);
+
+  const refresh = useCallback(async () => {
+    if (!token) {
+      setItems([]);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await apiGetWishlist(token);
+      syncFromResponse(data);
+    } catch (err) {
+      handleApiError(err, 'Fetch wishlist');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, syncFromResponse, handleApiError]);
+
   useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(items));
-  }, [items]);
+    refresh();
+  }, [refresh]);
+
+  const addToWishlist = useCallback(async (variantId: string, meta?: { name?: string; image?: string }) => {
+    if (!token) {
+      toast.error('Please login to use wishlist');
+      return;
+    }
+    try {
+      const data = await apiAddToWishlist(token, variantId);
+      syncFromResponse(data);
+      toast.success(meta?.name ? `Saved ${meta.name}` : 'Added to wishlist');
+    } catch (err) {
+      handleApiError(err, 'Add to wishlist');
+    }
+  }, [token, syncFromResponse, handleApiError]);
+
+  const removeFromWishlist = useCallback(async (variantId: string) => {
+    if (!token) {
+      toast.error('Please login to use wishlist');
+      return;
+    }
+    try {
+      const data = await apiRemoveFromWishlist(token, variantId);
+      syncFromResponse(data);
+      toast.success('Removed from wishlist');
+    } catch (err) {
+      handleApiError(err, 'Remove from wishlist');
+    }
+  }, [token, syncFromResponse, handleApiError]);
+
+  const isInWishlist = useCallback((variantId: string) => items.some((item) => item.id === String(variantId)), [items]);
+
+  const wishlistCount = useMemo(() => items.length, [items]);
 
   return (
     <WishlistContext.Provider
@@ -69,6 +126,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         removeFromWishlist,
         isInWishlist,
         wishlistCount,
+        isLoading,
+        refresh,
       }}
     >
       {children}

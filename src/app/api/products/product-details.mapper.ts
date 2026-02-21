@@ -126,6 +126,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
     price,
     currency: 'AED',
     description: api.description ?? '',
+    categoryId: api.category_id ?? undefined,
     productModelNo: api.product_model_no,
     baseStock,
     images,

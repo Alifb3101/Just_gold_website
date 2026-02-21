@@ -1,22 +1,25 @@
 import React from "react";
 
 const LOGO_URL =
-  "https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png"; 
+  "https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png";
 
 export function BrandMarqueePage() {
   const items = Array.from({ length: 18 }, (_, i) => i);
 
   return (
-    <div className="w-full bg-transparent py-3 sm:py-4">
+    <div className="w-full bg-transparent">
       <div className="w-full">
 
         {/* Marquee Wrapper */}
-        <div className="relative w-full overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-background via-muted/40 to-background">
+        <div className="relative w-full overflow-hidden rounded-2xl  bg-gradient-to-r from-background via-muted/40 to-background">
+
           {/* Soft fade edges */}
           <div className="pointer-events-none absolute left-0 top-0 h-full w-10 sm:w-16 bg-gradient-to-r from-background to-transparent z-10" />
           <div className="pointer-events-none absolute right-0 top-0 h-full w-10 sm:w-16 bg-gradient-to-l from-background to-transparent z-10" />
 
-          {/* Marquee Track */}
+          {/* Subtle shine overlay */}
+          <div className="absolute inset-0 shine-overlay pointer-events-none" />
+
           <div className="py-2 sm:py-3">
             <div className="marquee">
               <div className="marquee__group">
@@ -25,7 +28,6 @@ export function BrandMarqueePage() {
                 ))}
               </div>
 
-              {/* duplicate group for seamless loop */}
               <div className="marquee__group" aria-hidden="true">
                 {items.map((i) => (
                   <LogoBlock key={`b-${i}`} logo={LOGO_URL} />
@@ -34,11 +36,8 @@ export function BrandMarqueePage() {
             </div>
           </div>
         </div>
-
- 
       </div>
 
-      {/* ✅ Styles inside the page */}
       <style>{`
         .marquee {
           display: flex;
@@ -62,11 +61,26 @@ export function BrandMarqueePage() {
           100% { transform: translateX(-100%); }
         }
 
-        /* hover pause (desktop) */
-        @media (hover: hover) {
-          .marquee:hover .marquee__group {
-            animation-play-state: paused;
-          }
+        /* Shine sweep animation */
+        @keyframes shine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+
+        .shine-overlay::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          width: 40%;
+          background: linear-gradient(
+            120deg,
+            transparent 0%,
+            rgba(255,255,255,0.15) 50%,
+            transparent 100%
+          );
+          animation: shine 6s ease-in-out infinite;
         }
 
         /* speed changes for mobile */
@@ -90,27 +104,42 @@ export function BrandMarqueePage() {
   );
 }
 
-/* ✅ Logo + text block*/
+/* Premium Logo Block */
 function LogoBlock({ logo }) {
   return (
-    <div className="flex items-center gap-3 opacity-95">
-      <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-muted/30 border border-border flex items-center justify-center overflow-hidden">
+    <div className="logo-block flex items-center gap-4 opacity-95 transition-all duration-500">
+      
+      <div className="logo-circle h-11 w-11 sm:h-16 sm:w-16 rounded-full bg-muted/30 border border-border flex items-center justify-center overflow-hidden m-1.5">
         <img
           src={logo}
           alt="Brand"
-          className="h-6 w-6 sm:h-7 sm:w-7 object-contain"
+          className="h-8 w-8 sm:h-13 sm:w-13 object-contain transition-transform duration-500"
           draggable="false"
         />
       </div>
 
       <div className="leading-none">
-        <div className="text-foreground font-semibold tracking-wide text-sm sm:text-base">
-         Just Gold
-        </div>
-        <div className="text-muted-foreground text-[10px] sm:text-xs tracking-[0.2em] uppercase">
-          Premium Collection
-        </div>
+
       </div>
+
+      <style jsx>{`
+        .logo-circle {
+          transition: all 0.4s ease;
+          backdrop-filter: blur(6px);
+        }
+
+        .logo-block:hover .logo-circle {
+          box-shadow: 
+            0 0 25px rgba(255, 215, 0, 0.35),
+            0 8px 20px rgba(0, 0, 0, 0.15);
+          transform: scale(1.06);
+        }
+
+        .logo-block:hover img {
+          transform: scale(1.08);
+        }
+      `}</style>
     </div>
   );
 }
+
