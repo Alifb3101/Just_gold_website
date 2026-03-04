@@ -33,10 +33,23 @@ type FetchJsonOptions = RequestInit & {
 
 const buildApiUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) return path;
-  // Allow callers to hit the Vite proxy (and any same-origin API routes) directly.
-  // Example: `/api/products` should not become `${API_BASE_URL}/api/products`.
-  if (path === '/api' || path.startsWith('/api/')) return path;
+
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const baseIsRelative = API_BASE_URL.startsWith('/');
+
+  // If we have an absolute API base (env points to remote), always prepend it.
+  if (!baseIsRelative) {
+    const base = API_BASE_URL.replace(/\/+$/, '');
+    const trimmedPath =
+      base.endsWith('/api/v1') && normalizedPath.startsWith('/api/v1')
+        ? normalizedPath.replace(/^\/api\/v1/, '')
+        : normalizedPath;
+    return `${base}${trimmedPath}`;
+  }
+
+  // Otherwise allow direct /api hits to flow through the Vite proxy in dev.
+  if (normalizedPath === '/api' || normalizedPath.startsWith('/api/')) return normalizedPath;
+
   return `${API_BASE_URL}${normalizedPath}`;
 };
 
@@ -81,6 +94,8 @@ export async function fetchJson<T>(
         ...rest,
         method: resolvedMethod,
         signal: controller.signal,
+        // Always include credentials so backend cookies (e.g., guest cart token) are sent/received.
+        credentials: 'include',
         headers: {
           Accept: 'application/json',
           ...headers,

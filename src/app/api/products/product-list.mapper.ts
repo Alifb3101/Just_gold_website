@@ -49,6 +49,7 @@ export const mapApiListProductToProduct = (api: ApiProductListItem): ProductList
     hoverImageUrl,
     shortDescription: api.short_description ?? api.description ?? "",
     inStock,
+    tag: api.tag || undefined,
   };
 };
 

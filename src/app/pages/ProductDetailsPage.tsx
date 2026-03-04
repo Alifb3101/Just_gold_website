@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, Star, ChevronDown, ChevronUp, Minus, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { fetchProductByIdSlug } from '@/app/api/products/product-details.api';
 import type { Product, ProductImage, ProductShade } from '@/app/features/products/product-details.model';
 import { useCart } from '@/app/contexts/CartContext';
 import { useCategories } from '@/store/categoryStore';
+import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/cartService';
 
 const PANEL_ORDER: Array<'hex' | 'gradient' | 'image'> = ['hex', 'gradient', 'image'];
 const PANEL_LABELS: Record<'hex' | 'gradient' | 'image', string> = {
@@ -71,6 +73,7 @@ ShadeSwatch.displayName = 'ShadeSwatch';
 
 export function ProductDetailsPage() {
   const { productSlug } = useParams<{ productSlug: string }>();
+  const [searchParams] = useSearchParams();
   const { addToCart } = useCart();
   const { categories } = useCategories();
 
@@ -95,11 +98,17 @@ export function ProductDetailsPage() {
     return { productId: raw, slug: undefined };
   }, [productSlug]);
 
+  const selectedVariantId = useMemo(
+    () => searchParams.get('selectedVariantId')?.trim() ?? '',
+    [searchParams]
+  );
+
   const {
     data: product,
     isPending: isLoading,
     isError,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['product', productId],
     queryFn: ({ signal }) => fetchProductByIdSlug(productId, slug, signal),
@@ -108,9 +117,25 @@ export function ProductDetailsPage() {
   });
 
   useEffect(() => {
+    setSelectedShade('');
+    selectedShadeRef.current = '';
+    setVariantMedia([null, null]);
+    setSelectedImage(0);
+    setQuantity(1);
+  }, [productId]);
+
+  const productVariants = useMemo(() => {
+    if (!product) return [];
+    return product.variants ?? [];
+  }, [product]);
+
+  useEffect(() => {
     if (!product) return;
-    const defaultShade = product.shades[0]?.id ?? '';
-    const defaultFinish = product.shades[0]?.finishType ?? 'matte';
+    const defaultVariant = selectedVariantId
+      ? productVariants.find((variant) => String(variant.id) === selectedVariantId) ?? productVariants[0]
+      : productVariants[0];
+    const defaultShade = defaultVariant?.id ?? '';
+    const defaultFinish = defaultVariant?.finishType ?? 'matte';
     setSelectedShade(defaultShade);
     setSelectedFinishType(defaultFinish);
     selectedShadeRef.current = defaultShade;
@@ -124,21 +149,21 @@ export function ProductDetailsPage() {
     setActiveTab(product.tabs[0]?.id ?? '');
     setExpandedAccordion(null);
     setQuantity(1);
-  }, [product]);
+  }, [product, productVariants, selectedVariantId]);
 
   // ============================================
   // 🎬 HANDLERS
   // ============================================
   
   const shadePanels = useMemo<ProductShade[]>(() => {
-    if (!product) return [];
-    return product.shades.map((shade) => ({
+    if (!productVariants.length) return [];
+    return productVariants.map((shade) => ({
       ...shade,
       colorPanelType: shade.colorPanelType ?? 'hex',
       colorPanelValue: shade.colorPanelValue ?? shade.colorHex ?? '',
       finishType: shade.finishType ?? 'matte',
     }));
-  }, [product]);
+  }, [productVariants]);
 
   const finishTypeOptions = useMemo(() => {
     const set = new Set<string>();
@@ -231,7 +256,7 @@ export function ProductDetailsPage() {
     }
   };
 
-  const handleAddToBag = () => {
+  const handleAddToBag = async () => {
     if (!product) return;
     if (maxStock && quantity > maxStock) return;
     if (maxStock === 0) return;
@@ -242,14 +267,55 @@ export function ProductDetailsPage() {
       || baseMedia[0]?.url
       || '';
 
-    addToCart(
-      String(selectedShadeData?.id ?? product.id),
-      quantity,
-      {
-        name: selectedShadeData ? `${product.name} - ${selectedShadeData.name}` : product.name,
-        image: imageCandidate,
+    try {
+      const payload = getValidatedCartPayload(product, selectedShadeData, quantity);
+
+      console.debug('[cart][frontend] add.request', {
+        productId: payload.product_id,
+        variantId: payload.product_variant_id,
+        quantity: payload.quantity,
+        productName: payload.productName,
+        variantShade: payload.variantShade,
+      });
+
+      await addToCart(
+        String(payload.product_id),
+        String(payload.product_variant_id),
+        payload.quantity,
+        {
+          name: product.name,
+          image: imageCandidate,
+          variantName: payload.variantShade,
+          onVariantMismatch: async () => {
+            const refreshed = await refetch();
+            const refreshedProduct = refreshed.data;
+            const reboundVariant = refreshedProduct?.variants?.[0];
+
+            if (!refreshedProduct || !reboundVariant) return;
+
+            setSelectedShade(reboundVariant.id);
+            selectedShadeRef.current = reboundVariant.id;
+            setSelectedFinishType(reboundVariant.finishType ?? 'matte');
+            const reboundVariantImages = refreshedProduct.images.filter((img) => img.variantId === reboundVariant.id);
+            const fallbackImages = refreshedProduct.images.filter((img) => !img.variantId).slice(0, 2);
+            setVariantMedia([
+              reboundVariantImages[0] ?? fallbackImages[0] ?? null,
+              reboundVariantImages[1] ?? fallbackImages[1] ?? null,
+            ]);
+            setSelectedImage(0);
+            setQuantity(1);
+          },
+        }
+      );
+    } catch (err) {
+      if (err instanceof CartPayloadValidationError) {
+        toast.error(err.message);
+        return;
       }
-    );
+
+      toast.error('Add to cart failed.');
+      console.error(err);
+    }
   };
 
   const handleShadeSelect = useCallback(

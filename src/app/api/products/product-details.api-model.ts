@@ -32,7 +32,7 @@ export interface ApiProduct {
   product_model_no: string;
   how_to_apply?: string | null;
   benefits?: string | null;
-  key_features?: string | null;
+  product_description?: string | null;
   ingredients?: string | null;
   variants: ApiVariant[];
   media: ApiMedia[];

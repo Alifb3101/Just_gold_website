@@ -18,6 +18,7 @@ export interface ApiProductListItem {
     price: string;
     discount_price: string | null;
   }>;
+  tag?: string | null;
 }
 
 export interface ApiProductListResponse {

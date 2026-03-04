@@ -49,9 +49,30 @@ export async function getProducts(filters = {}, signal) {
   try {
     console.debug('[products] fetch', url);
     const response = await fetchJson(url, { signal });
-    return mapApiProductCursorListResponse(response);
+
+    // Backend currently returns { page, limit, count, products: [...] } without cursor fields.
+    // Normalize into the cursor-based shape expected by the mapper.
+    const page = Number(response.page ?? 1);
+    const limit = Number(response.limit ?? (response.products?.length ?? 0));
+    const total = Number(response.count ?? 0);
+    const products = Array.isArray(response.products) ? response.products : [];
+    const hasMore = limit > 0 ? page * limit < total : false;
+    const nextCursor = hasMore ? page + 1 : null;
+
+    return mapApiProductCursorListResponse({
+      products,
+      nextCursor,
+      hasMore,
+    });
   } catch (error) {
-    console.error('[products] fetch error', { url, error });
-    throw error instanceof Error ? error : new Error('Failed to fetch products');
+    // Ignore aborts caused by React Query cancellations or rapid navigations.
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.debug('[products] fetch aborted', { url });
+      return { products: [], nextCursor: null, hasMore: false };
+    }
+
+    const errorMessage = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : String(error);
+    console.error('[products] fetch error', { url, message: errorMessage, error });
+    throw error instanceof Error ? error : new Error(errorMessage || 'Failed to fetch products');
   }
 }

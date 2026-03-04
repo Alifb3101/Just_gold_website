@@ -42,7 +42,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
 
   pushTab('how-to-apply', 'HOW TO APPLY', api.how_to_apply);
   pushTab('benefits', 'BENEFITS', api.benefits);
-  pushTab('key-features', 'KEY FEATURES', api.key_features);
+  pushTab('product_description', 'PRODUCT DESCRIPTION', api.product_description);
   pushTab('ingredients', 'INGREDIENTS', api.ingredients);
 
   const shades = (api.variants ?? []).map((variant) => {
@@ -55,6 +55,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
 
     return {
       id: String(variant.id),
+      productId: String(api.id),
       name: variant.shade,
       colorHex: colorPanelType === 'hex' ? colorPanelValue : undefined,
       colorPanelType,
@@ -131,6 +132,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
     baseStock,
     images,
     shades,
+    variants: shades,
     tabs,
     reviews: [],
     averageRating: 0,

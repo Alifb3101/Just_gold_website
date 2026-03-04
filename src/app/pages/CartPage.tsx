@@ -4,23 +4,43 @@ import { ChevronRight, Trash2, Heart, ShoppingBag, Lock, RotateCcw, Headphones, 
 import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
 import { useApp } from '@/app/contexts/AppContext';
+import { preloadCheckoutPage } from '@/pages/prefetch';
 import { QuantitySelector } from '@/app/components/ui/quantity-selector';
 import { Input } from '@/app/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/app/components/ui/alert-dialog';
 
+const toProductSlugSegment = (name: string): string =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
 export function CartPage() {
-  const { items, removeFromCart, updateQuantity, clearCart, subtotal, applyPromoCode, promoCode, discount } = useCart();
+  const {
+    items,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    subtotal,
+    shipping,
+    discountAmount,
+    total,
+    freeShippingRemaining,
+    applyPromoCode,
+    promoCode,
+  } = useCart();
   const { addToWishlist } = useWishlist();
-  const { convertPrice, currency } = useApp();
+  const { convertPrice } = useApp();
   const [promoInput, setPromoInput] = useState('');
   const [showPromoInput, setShowPromoInput] = useState(false);
 
-  const shipping = subtotal > 500 ? 0 : 25;
-  const discountAmount = (subtotal * discount) / 100;
-  const total = subtotal + shipping - discountAmount;
-
   const handleMoveToWishlist = (item: any) => {
-    addToWishlist(String(item.id), { name: item.name, image: item.image });
+    const variantId = item.variantModelNo && item.variantModelNo !== 'NULL'
+      ? String(item.id)
+      : undefined;
+    addToWishlist(String(item.productId), variantId, { name: item.name, image: item.image });
     removeFromCart(String(item.id));
   };
 
@@ -88,14 +108,26 @@ export function CartPage() {
 
             {/* Cart Items List */}
             <div className="space-y-4">
-              {items.map((item) => (
+              {items.map((item) => {
+                const slugSegment = toProductSlugSegment(item.name);
+                const productPathBase = slugSegment
+                  ? `/product/${item.productId}-${slugSegment}`
+                  : `/product/${item.productId}`;
+                const productPath = item.selectedVariantId
+                  ? `${productPathBase}?selectedVariantId=${encodeURIComponent(item.selectedVariantId)}`
+                  : productPathBase;
+
+                return (
                 <div key={item.id} className="bg-white rounded-lg border border-[#D4AF37]/30 p-4 md:p-6">
                   <div className="flex gap-4">
                     {/* Product Image */}
                     <div className="flex-shrink-0">
-                      <div className="w-20 h-20 md:w-32 md:h-32 rounded-lg border border-[#D4AF37]/30 overflow-hidden bg-[#FAF3E0]">
+                      <Link
+                        to={productPath}
+                        className="block w-20 h-20 md:w-32 md:h-32 rounded-lg border border-[#D4AF37]/30 overflow-hidden bg-[#FAF3E0]"
+                      >
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
+                      </Link>
                     </div>
 
                     {/* Product Details */}
@@ -103,12 +135,32 @@ export function CartPage() {
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         {/* Left: Product Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-[#3E2723] mb-1 line-clamp-2">{item.name}</h3>
-                          <p className="text-sm text-[#D4AF37] mb-2">{item.category}</p>
-                          {item.shade && (
+                          <Link
+                            to={productPath}
+                            className="block"
+                          >
+                            <h3 className="font-semibold text-[#3E2723] mb-1 line-clamp-2 hover:text-[#D4AF37] transition-colors">{item.name}</h3>
+                          </Link>
+                          {item.category && <p className="text-sm text-[#D4AF37] mb-2">{item.category}</p>}
+                          {item.colorPanelType && item.colorPanelValue && item.variantModelNo && item.variantModelNo !== 'NULL' && (
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm text-gray-600">Shade:</span>
-                              <div className="w-5 h-5 rounded-full border border-gray-300" style={{ backgroundColor: item.shade }} />
+                              <span className="text-sm text-gray-600">Color:</span>
+                              <div className="w-5 h-5 rounded-full border border-gray-300 overflow-hidden">
+                                {item.colorPanelType === 'image' ? (
+                                  <img
+                                    src={item.colorPanelValue}
+                                    alt={`${item.name} color swatch`}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                ) : (
+                                  <div
+                                    className="w-full h-full"
+                                    style={{ background: item.colorPanelValue }}
+                                  />
+                                )}
+                              </div>
                             </div>
                           )}
                           <p className={`text-sm ${item.inStock ? 'text-green-600' : 'text-orange-600'} mb-3`}>
@@ -160,7 +212,7 @@ export function CartPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
 
             {/* Cart Actions */}
@@ -208,15 +260,19 @@ export function CartPage() {
                     {shipping === 0 ? 'FREE' : convertPrice(shipping)}
                   </span>
                 </div>
-                {shipping > 0 && (
-                  <p className="text-xs text-[#D4AF37]">
-                    Add {convertPrice(500 - subtotal)} more for FREE shipping!
-                  </p>
-                )}
+                {freeShippingRemaining !== null ? (
+                  freeShippingRemaining > 0 ? (
+                    <p className="text-xs text-[#D4AF37]">
+                      Spend {convertPrice(freeShippingRemaining)} more to unlock free shipping.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-[#388E3C]">Free shipping is applied to your cart.</p>
+                  )
+                ) : null}
                 <p className="text-xs text-gray-500">All prices include VAT.</p>
-                {discount > 0 && (
+                {discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>Discount ({discount}%):</span>
+                    <span>Discount:</span>
                     <span className="font-semibold">-{convertPrice(discountAmount)}</span>
                   </div>
                 )}
@@ -269,11 +325,20 @@ export function CartPage() {
 
               {/* CTA Buttons */}
               <div className="space-y-3 mb-6">
-                <button className="w-full bg-[#D4AF37] text-white py-4 rounded-lg font-bold text-lg hover:bg-[#C4A037] transition-all hover:shadow-xl flex items-center justify-center gap-2">
+                <Link
+                  to="/checkout"
+                  onMouseEnter={() => {
+                    void preloadCheckoutPage();
+                  }}
+                  onFocus={() => {
+                    void preloadCheckoutPage();
+                  }}
+                  className="w-full bg-[#D4AF37] text-white py-4 rounded-lg font-bold text-lg hover:bg-[#C4A037] transition-all hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                >
                   <Lock className="w-5 h-5" />
                   Proceed to Checkout
                   <ChevronRight className="w-5 h-5" />
-                </button>
+                </Link>
                 <Link
                   to="/"
                   className="block w-full border-2 border-[#D4AF37] text-[#D4AF37] py-3 rounded-lg font-semibold text-center hover:bg-[#F5E6D3] transition-colors"

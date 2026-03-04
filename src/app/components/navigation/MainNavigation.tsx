@@ -298,7 +298,7 @@ export function MainNavigation() {
         {/* ✅ Brand Bar (BIG logo + text + icons) */}
         <div className="bg-gradient-to-b from-[#FFF7EB] to-white">
           <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-10 nav-bar">
-            <div className="relative flex items-center justify-between py-4 sm:py-5 lg:py-8">
+            <div className="relative flex items-center justify-between py-4 sm:py-5 lg:py-5">
               {/* LEFT: Mobile Menu */}
               <div className="flex items-center gap-2">
                 <button
@@ -463,7 +463,7 @@ export function MainNavigation() {
                       sm:w-[110px] sm:h-[52px]
                       md:w-[100px] md:h-[45px]
                       lg:w-[160px] lg:h-[70px]
-                      xl:w-[180px] xl:h-[100px]
+                      xl:w-[160px] xl:h-[90px]
                       drop-shadow-[0_0_20px_rgba(212,175,55,0.35)]
                       group-hover:scale-[1.05]
                       transition-transform duration-300

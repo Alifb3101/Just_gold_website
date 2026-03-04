@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Heart, Star } from 'lucide-react';
 import { useApp } from '@/app/contexts/AppContext';
+import { useWishlist } from '@/app/contexts/WishlistContext';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 
@@ -13,6 +14,7 @@ interface ProductCardProps {
     rating: number;
     reviews: number;
     badge?: string;
+    tag?: string;
     slug?: string;
     description?: string;
   };
@@ -20,7 +22,10 @@ interface ProductCardProps {
 
 export const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const { convertPrice } = useApp();
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+
+  const productId = String(product.id);
+  const isWishlisted = isInWishlist(productId);
 
   const productSlug = useMemo(() => {
     const normalized = (product.slug ?? product.name)
@@ -33,7 +38,15 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
+    if (isWishlisted) {
+      removeFromWishlist(productId);
+      return;
+    }
+
+    addToWishlist(productId, undefined, {
+      name: product.name,
+      image: product.image,
+    });
   };
 
   return (
@@ -45,7 +58,16 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
         viewport={{ once: true }}
         className="group relative bg-white rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer"
       >
-      {/* Badge */}
+      {/* Badges */}
+      {product.tag ? (
+        <div
+          className="absolute top-3 left-3 z-10 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-[#3E2723] shadow-sm"
+          style={{ fontFamily: '"Twemoji Mozilla","Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif' }}
+        >
+          {(product.tag || '').replace(/\p{Extended_Pictographic}/gu, '').trim() || product.tag}
+        </div>
+      ) : null}
+
       {product.badge && (
         <div className="absolute top-3 right-3 z-10 bg-[#D4AF37] text-white text-xs font-semibold px-3 py-1 rounded-full">
           {product.badge}

@@ -2,12 +2,11 @@ import React from 'react';
 import { HeroSlider } from '@/app/components/home/HeroSlider';
 import { CategoryLinks } from '@/app/components/home/CategoryLinks';
 import { FeaturedCollections } from '@/app/components/home/FeaturedCollections';
-import { BestSellers } from '@/app/components/home/BestSellers';
+import { HomepageProductSections } from '@/app/components/home/HomepageProductSections';
 import { PromoBanner } from '@/app/components/home/PromoBanner';
 import { InstagramFeed } from '@/app/components/home/InstagramFeed';
 import { Newsletter } from '@/app/components/home/Newsletter';
 import { BrandMarqueePage } from '@/app/components/home/BrandMarqueePage';
-import DealOfTheDay from '@/app/components/home/deal_of_the_day';
 
 export function HomePage() {
   return (
@@ -24,11 +23,8 @@ export function HomePage() {
       {/* Featured Collections */}
       <FeaturedCollections />
 
-      {/* Best Sellers */}
-      <BestSellers />
-
-      {/* Deal of the Day */}
-      <DealOfTheDay />
+      {/* Dynamic Homepage Product Sections */}
+      <HomepageProductSections />
 
       {/* Promotional Banner */}
       <PromoBanner />

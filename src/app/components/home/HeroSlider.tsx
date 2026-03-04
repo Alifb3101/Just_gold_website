@@ -10,10 +10,10 @@ interface Slide {
 }
 
 const slides: Slide[] = [
-  { id: 1, image: "https://i.postimg.cc/66VBWBDJ/JH-ll-jpg.jpg" },
-  { id: 2, image: "https://i.postimg.cc/hGsDTfxm/imgi-319-2-1-9d8b855b-0880-4d79-94cc-e948519cb79d-2048x.jpg" },
-  { id: 3, image: "https://i.postimg.cc/g0mcxvwG/imgi-73-hydra-lock-banner-1-2048x.jpg" },
-  { id: 4, image: "https://i.postimg.cc/yNj1ck99/imgi-323-6-1-2048x.jpg" },
+    { id: 1, image: "https://i.postimg.cc/RCb9mmNc/JG-Mascara-Web-Banner-jpg.jpg" },
+  { id: 2, image: "https://i.postimg.cc/sf0yzzvY/JG_Unique_Single_Blush_Web_Poster_jpg.jpg" },
+  { id: 3, image: "https://i.postimg.cc/66VBWBDJ/JH-ll-jpg.jpg" },
+  { id: 4, image: "https://i.postimg.cc/13TJ6KWH/JG-Skin-Fit-Web-banner-jpg.jpg" },
 ];
 
 export function HeroSlider() {
@@ -22,7 +22,7 @@ export function HeroSlider() {
   const settings = {
     dots: false,
     infinite: true,
-    speed: 500,
+    speed: 800,
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
@@ -33,18 +33,28 @@ export function HeroSlider() {
 
   return (
     <section className="w-full bg-[#FAF3E0]">
-      <div className="relative w-full hero-slider aspect-[16/9] max-h-[820px] overflow-hidden">
+      <div
+        className="relative w-full hero-slider mx-auto overflow-hidden"
+        style={{
+          aspectRatio: "16/9",
+          maxWidth: "3200px",
+          maxHeight: "1800px",
+        }}
+      >
         <Slider ref={sliderRef} {...settings} className="h-full">
           {slides.map((slide, index) => (
             <div key={slide.id} className="w-full h-full">
-              <div className="relative w-full h-full aspect-[16/9] max-h-[820px] overflow-hidden bg-transparent">
+              <div
+                className="relative w-full h-full mx-auto overflow-hidden bg-transparent"
+                style={{ aspectRatio: "16/9", maxWidth: "3200px", maxHeight: "1800px" }}
+              >
                 <img
                   src={slide.image}
                   alt="Hero Banner"
-                  className="w-full h-full object-cover object-center block"
+                  className="w-full h-full object-contain object-center block"
+                  style={{ maxWidth: "3200px", maxHeight: "1800px", aspectRatio: "16/9" }}
                   loading={index === 0 ? "eager" : "lazy"}
                 />
-
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
@@ -56,8 +66,7 @@ export function HeroSlider() {
             </div>
           ))}
         </Slider>
-
-        <button
+        {/* <button
           onClick={() => sliderRef.current?.slickPrev()}
           className="absolute left-3 top-1/2 -translate-y-1/2 z-10
                      w-11 h-11 bg-white/90 hover:bg-white rounded-full
@@ -66,7 +75,6 @@ export function HeroSlider() {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-
         <button
           onClick={() => sliderRef.current?.slickNext()}
           className="absolute right-3 top-1/2 -translate-y-1/2 z-10
@@ -75,7 +83,7 @@ export function HeroSlider() {
                      text-[#D4AF37] shadow-lg hover:scale-110 transition-all"
         >
           <ChevronRight className="w-5 h-5" />
-        </button>
+        </button> */}
       </div>
     </section>
   );

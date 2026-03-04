@@ -1,11 +1,27 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, LogOut, Mail, MapPin, Package, Phone, ShieldCheck, ShoppingBag, User } from "lucide-react";
+import {
+  Heart,
+  LogOut,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  User,
+  Package,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useWishlist } from "@/app/contexts/WishlistContext";
 import { useCart } from "@/app/contexts/CartContext";
-import { listAddresses, setDefaultAddress, deleteAddress, createAddress, type Address, type CreateAddressInput } from "@/services/addressService";
+import {
+  listAddresses,
+  setDefaultAddress,
+  deleteAddress,
+  createAddress,
+  type Address,
+  type CreateAddressInput,
+} from "@/services/addressService";
 import { ApiError } from "@/app/api/http";
 
 export function AccountPage() {
@@ -13,24 +29,39 @@ export function AccountPage() {
   const { items: wishlistItems } = useWishlist();
   const { items: cartItems, subtotal } = useCart();
   const navigate = useNavigate();
+
   const [addresses, setAddresses] = React.useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = React.useState(false);
   const [isAdding, setIsAdding] = React.useState(false);
   const [isSubmittingAddress, setIsSubmittingAddress] = React.useState(false);
-  const [addressForm, setAddressForm] = React.useState<CreateAddressInput>({
-    label: "Home",
-    full_name: "",
-    phone: "",
-    line1: "",
-    line2: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
-  });
 
-  const updateForm = (key: keyof CreateAddressInput, value: string) => {
-    setAddressForm(prev => ({ ...prev, [key]: value }));
+  const [addressForm, setAddressForm] =
+    React.useState<CreateAddressInput & { emirate?: string }>({
+      label: "Home",
+      full_name: "",
+      phone: "",
+      line1: "",
+      line2: "",
+      city: "",
+      country: "United Arab Emirates",
+      emirate: "",
+    });
+
+  const EMIRATES = [
+    "Abu Dhabi",
+    "Dubai",
+    "Sharjah",
+    "Ajman",
+    "Umm Al Quwain",
+    "Ras Al Khaimah",
+    "Fujairah",
+  ];
+
+  const updateForm = (
+    key: keyof (CreateAddressInput & { emirate?: string }),
+    value: string
+  ) => {
+    setAddressForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const loadAddresses = React.useCallback(async () => {
@@ -40,96 +71,54 @@ export function AccountPage() {
       const res = await listAddresses(token);
       setAddresses(res ?? []);
     } catch (err) {
-      const unauthorized = err instanceof ApiError && err.status === 401;
-      const notFound = err instanceof ApiError && err.status === 404;
-      if (unauthorized) {
+      if (err instanceof ApiError && err.status === 401) {
         logout();
         navigate("/login", { replace: true });
         return;
       }
-      if (notFound) {
-        toast.error("Address not found");
-      } else {
-        toast.error((err as Error)?.message || "Unable to load addresses");
-      }
+      toast.error("Unable to load addresses");
     } finally {
       setIsLoadingAddresses(false);
     }
   }, [token, logout, navigate]);
 
   React.useEffect(() => {
-    if (isAuthReady && token) {
-      loadAddresses();
-    }
+    if (isAuthReady && token) loadAddresses();
   }, [isAuthReady, token, loadAddresses]);
 
   const handleSetDefault = async (id: number) => {
     if (!token) return;
-    try {
-      await setDefaultAddress(token, id);
-      toast.success("Default address updated");
-      await loadAddresses();
-    } catch (err) {
-      const unauthorized = err instanceof ApiError && err.status === 401;
-      const notFound = err instanceof ApiError && err.status === 404;
-      if (unauthorized) {
-        logout();
-        navigate("/login", { replace: true });
-        return;
-      }
-      if (notFound) toast.error("Address not found"); else toast.error((err as Error)?.message || "Unable to set default");
-    }
+    await setDefaultAddress(token, id);
+    toast.success("Default address updated");
+    loadAddresses();
   };
 
   const handleDelete = async (id: number) => {
     if (!token) return;
-    try {
-      await deleteAddress(token, id);
-      toast.success("Address removed");
-      setAddresses(prev => prev.filter(a => a.id !== id));
-    } catch (err) {
-      const unauthorized = err instanceof ApiError && err.status === 401;
-      const notFound = err instanceof ApiError && err.status === 404;
-      if (unauthorized) {
-        logout();
-        navigate("/login", { replace: true });
-        return;
-      }
-      if (notFound) toast.error("Address not found"); else toast.error((err as Error)?.message || "Unable to delete address");
-    }
+    await deleteAddress(token, id);
+    toast.success("Address removed");
+    setAddresses((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleCreate = async () => {
     if (!token) return;
-    if (!addressForm.full_name || !addressForm.phone || !addressForm.line1) {
-      toast.error("Full name, phone, and address line 1 are required");
+    const { full_name, phone, line1, emirate } = addressForm;
+    if (!full_name || !phone || !line1 || !emirate) {
+      toast.error("Required fields missing");
       return;
     }
+
     setIsSubmittingAddress(true);
     try {
-      const created = await createAddress(token, addressForm);
-      toast.success("Address added");
-      setAddresses(prev => [created, ...prev]);
-      setIsAdding(false);
-      setAddressForm({
-        label: "Home",
-        full_name: "",
-        phone: "",
-        line1: "",
-        line2: "",
-        city: "",
-        state: "",
-        postal_code: "",
-        country: "",
+      const created = await createAddress(token, {
+        ...addressForm,
+        country: "United Arab Emirates",
       });
-    } catch (err) {
-      const unauthorized = err instanceof ApiError && err.status === 401;
-      if (unauthorized) {
-        logout();
-        navigate("/login", { replace: true });
-        return;
-      }
-      toast.error((err as Error)?.message || "Unable to add address");
+      setAddresses((prev) => [created, ...prev]);
+      toast.success("Address added");
+      setIsAdding(false);
+    } catch {
+      toast.error("Unable to add address");
     } finally {
       setIsSubmittingAddress(false);
     }
@@ -137,286 +126,262 @@ export function AccountPage() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0] text-[#3E2723]">
-        <span>Loading your account...</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#FFF9F0]">
+        <div className="animate-pulse text-[#3E2723]">
+          Loading your account...
+        </div>
       </div>
     );
   }
 
-  const displayName = user?.name?.trim() || name?.trim() || "Beauty Insider";
+  const displayName =
+    user?.name?.trim() || name?.trim() || "Beauty Insider";
   const displayEmail = user?.email || email || "Not provided";
-  const displayPhone = (user?.phone ?? phone) || "Add a phone number";
-
-  const handleLogout = () => {
-    logout();
-    toast.success("Signed out");
-    navigate("/login", { replace: true });
-  };
-
-  const quickLinks = [
-    {
-      label: "Wishlist",
-      value: `${wishlistItems.length} item${wishlistItems.length === 1 ? "" : "s"}`,
-      icon: Heart,
-      to: "/wishlist",
-      accent: "bg-[#D4AF37]/10 text-[#D4AF37]",
-    },
-    {
-      label: "Shopping Bag",
-      value: `${cartItems.length} item${cartItems.length === 1 ? "" : "s"}`,
-      icon: ShoppingBag,
-      to: "/cart",
-      accent: "bg-[#3E2723]/10 text-[#3E2723]",
-    },
-    {
-      label: "Orders",
-      value: "Tracking soon",
-      icon: Package,
-      to: "/shop",
-      accent: "bg-[#B08938]/10 text-[#B08938]",
-    },
-  ];
+  const displayPhone = user?.phone ?? phone ?? "Add phone number";
 
   return (
-    <div className="min-h-screen bg-[#FFF9F0]">
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFFDF8] via-[#FFF9F0] to-[#FDF6E9]">
+
+      {/* CONTAINER */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-[#B08938]">Account</p>
-            <h1 className="font-['Playfair_Display'] text-3xl md:text-4xl font-bold text-[#3E2723]">Your profile</h1>
-            <p className="text-sm text-[#6B4A3A]">Manage your details, favorites, and preferences.</p>
+            <h1 className="text-4xl md:text-5xl font-bold font-['Playfair_Display'] text-[#2C1F1B]">
+              My Account
+            </h1>
+            <p className="text-[#6B4A3A] mt-2">
+              Manage your profile, addresses and activity.
+            </p>
           </div>
+
           <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 bg-[#3E2723] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#2c1f1b] transition"
+            onClick={logout}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2C1F1B] text-white hover:shadow-xl hover:-translate-y-0.5 transition-all"
           >
-            <LogOut className="w-4 h-4" />
-            Sign out
+            <LogOut size={18} />
+            Sign Out
           </button>
         </div>
-      </div>
 
-      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-[0_20px_60px_rgba(62,39,35,0.08)] border border-[#D4AF37]/20">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#F1D08B] text-[#3E2723] font-bold flex items-center justify-center uppercase">
-                {displayName.slice(0, 1)}
+        {/* PROFILE + QUICK LINKS */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+          {/* PROFILE CARD */}
+          <div className="xl:col-span-2 bg-white rounded-3xl p-8 shadow-xl border border-[#D4AF37]/20">
+
+            <div className="flex gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#F5D98F] flex items-center justify-center text-[#2C1F1B] text-xl font-bold shadow-md">
+                {displayName.charAt(0)}
               </div>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2 text-sm text-[#B08938]">
-                  <ShieldCheck className="w-4 h-4" />
-                  Secure area
+
+              <div className="flex-1">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-[#B08938]">
+                  <ShieldCheck size={14} />
+                  Secure Profile
                 </div>
-                <h2 className="text-2xl font-semibold text-[#3E2723]">{displayName}</h2>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6 text-sm text-[#6B4A3A]">
-                  <span className="inline-flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-[#D4AF37]" />
+
+                <h2 className="text-2xl font-semibold text-[#2C1F1B] mt-2">
+                  {displayName}
+                </h2>
+
+                <div className="mt-4 flex flex-col sm:flex-row sm:gap-8 text-sm text-[#6B4A3A]">
+                  <span className="flex items-center gap-2">
+                    <Mail size={14} className="text-[#D4AF37]" />
                     {displayEmail}
                   </span>
-                  <span className="inline-flex items-center gap-2 mt-1 sm:mt-0">
-                    <Phone className="w-4 h-4 text-[#D4AF37]" />
+                  <span className="flex items-center gap-2 mt-2 sm:mt-0">
+                    <Phone size={14} className="text-[#D4AF37]" />
                     {displayPhone}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-[#FFF6E5] border border-[#F1D08B]">
-                <p className="text-xs uppercase tracking-wide text-[#B08938]">Wishlist</p>
-                <p className="text-2xl font-semibold text-[#3E2723] mt-1">{wishlistItems.length}</p>
-                <p className="text-xs text-[#6B4A3A]">Saved favorites</p>
-              </div>
-              <div className="p-4 rounded-xl bg-white border border-[#E5D8C2]">
-                <p className="text-xs uppercase tracking-wide text-[#B08938]">Bag</p>
-                <p className="text-2xl font-semibold text-[#3E2723] mt-1">{cartItems.length}</p>
-                <p className="text-xs text-[#6B4A3A]">Items ready to checkout</p>
-              </div>
-              <div className="p-4 rounded-xl bg-white border border-[#E5D8C2]">
-                <p className="text-xs uppercase tracking-wide text-[#B08938]">Subtotal</p>
-                <p className="text-2xl font-semibold text-[#3E2723] mt-1">${subtotal.toFixed(2)}</p>
-                <p className="text-xs text-[#6B4A3A]">Before shipping and taxes</p>
-              </div>
+            {/* STATS */}
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <StatCard title="Wishlist" value={wishlistItems.length} />
+              <StatCard title="Cart Items" value={cartItems.length} />
+              <StatCard
+                title="Subtotal"
+                value={`AED ${subtotal.toFixed(2)}`}
+              />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-[0_20px_60px_rgba(62,39,35,0.08)] border border-[#D4AF37]/20 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-[#B08938]">Shortcuts</p>
-                <h3 className="text-lg font-semibold text-[#3E2723]">Quick actions</h3>
-              </div>
-              <User className="w-5 h-5 text-[#D4AF37]" />
-            </div>
-
-            <div className="space-y-3">
-              {quickLinks.map(({ label, value, icon: Icon, to, accent }) => (
-                <Link
-                  key={label}
-                  to={to}
-                  className="flex items-center justify-between rounded-xl border border-[#E5D8C2] bg-[#FFFBF3] px-4 py-3 hover:border-[#D4AF37] transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${accent}`}>
-                      <Icon className="w-5 h-5" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-[#3E2723]">{label}</p>
-                      <p className="text-xs text-[#6B4A3A]">{value}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-[#B08938]">Open</span>
-                </Link>
-              ))}
-            </div>
+          {/* QUICK LINKS */}
+          <div className="bg-white rounded-3xl p-8 shadow-xl border border-[#D4AF37]/20 space-y-4">
+            <QuickLink to="/orders" icon={Package} label="Orders" />
+            <QuickLink to="/wishlist" icon={Heart} label="Wishlist" />
+            <QuickLink to="/account" icon={User} label="Profile" />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white rounded-2xl p-6 shadow-[0_20px_60px_rgba(62,39,35,0.08)] border border-[#D4AF37]/20 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[#B08938] text-sm font-semibold">
-                <MapPin className="w-4 h-4" />
-                Addresses
-              </div>
-              <button
-                onClick={() => setIsAdding(prev => !prev)}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#3E2723] px-4 py-2 rounded-lg border border-[#E5D8C2] hover:border-[#D4AF37] hover:bg-[#FFF6E5] transition"
+        {/* ADDRESS SECTION */}
+        <div className="bg-white rounded-3xl p-8 shadow-xl border border-[#D4AF37]/20">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-[#2C1F1B]">
+              Saved Addresses
+            </h3>
+
+            <button
+              onClick={() => setIsAdding((p) => !p)}
+              className="px-5 py-2 rounded-xl border border-[#2C1F1B] hover:bg-[#2C1F1B] hover:text-white transition"
+            >
+              {isAdding ? "Close" : "Add Address"}
+            </button>
+          </div>
+
+          {isAdding && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <PremiumInput
+                placeholder="Full Name *"
+                value={addressForm.full_name}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  updateForm("full_name", e.target.value)
+                }
+              />
+              <PremiumInput
+                placeholder="Phone *"
+                value={addressForm.phone}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm("phone", e.target.value)}
+              />
+              <PremiumInput
+                placeholder="Address Line 1 *"
+                value={addressForm.line1}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm("line1", e.target.value)}
+              />
+              <PremiumInput
+                placeholder="City"
+                value={addressForm.city}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateForm("city", e.target.value)}
+              />
+
+              <select
+                className="col-span-1 md:col-span-2 border rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#D4AF37]"
+                value={addressForm.emirate}
+                onChange={(e) =>
+                  updateForm("emirate", e.target.value)
+                }
               >
-                {isAdding ? "Close" : "Add address"}
+                <option value="">Select Emirate *</option>
+                {EMIRATES.map((em) => (
+                  <option key={em}>{em}</option>
+                ))}
+              </select>
+
+              <button
+                onClick={handleCreate}
+                disabled={isSubmittingAddress}
+                className="col-span-1 md:col-span-2 bg-[#D4AF37] text-white py-3 rounded-xl font-semibold hover:opacity-90 transition"
+              >
+                {isSubmittingAddress ? "Saving..." : "Save Address"}
               </button>
             </div>
+          )}
 
-            {isAdding && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border border-[#E5D8C2] rounded-xl p-4 bg-[#FFFBF3]">
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Label (Home, Work)"
-                  value={addressForm.label}
-                  onChange={e => updateForm("label", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Full name *"
-                  value={addressForm.full_name}
-                  onChange={e => updateForm("full_name", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Phone *"
-                  value={addressForm.phone}
-                  onChange={e => updateForm("phone", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Address line 1 *"
-                  value={addressForm.line1}
-                  onChange={e => updateForm("line1", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Address line 2"
-                  value={addressForm.line2}
-                  onChange={e => updateForm("line2", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="City"
-                  value={addressForm.city}
-                  onChange={e => updateForm("city", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="State"
-                  value={addressForm.state}
-                  onChange={e => updateForm("state", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Postal code"
-                  value={addressForm.postal_code}
-                  onChange={e => updateForm("postal_code", e.target.value)}
-                />
-                <input
-                  className="rounded-lg border border-[#E5D8C2] px-3 py-2 text-sm"
-                  placeholder="Country"
-                  value={addressForm.country}
-                  onChange={e => updateForm("country", e.target.value)}
-                />
-                <div className="md:col-span-2 flex items-center gap-3">
-                  <button
-                    onClick={handleCreate}
-                    disabled={isSubmittingAddress}
-                    className="px-4 py-2 rounded-lg bg-[#D4AF37] text-white font-semibold hover:bg-[#C4A037] disabled:opacity-60"
-                  >
-                    {isSubmittingAddress ? "Saving..." : "Save address"}
-                  </button>
-                  <p className="text-xs text-[#6B4A3A]">* Required</p>
-                </div>
-              </div>
-            )}
-
-            {isLoadingAddresses ? (
-              <p className="text-sm text-[#6B4A3A]">Loading addresses...</p>
-            ) : addresses.length === 0 ? (
-              <p className="text-sm text-[#6B4A3A]">No addresses yet. Add one to speed up checkout.</p>
-            ) : (
-              <div className="space-y-3">
-                {addresses.map((addr) => (
-                  <div
-                    key={addr.id}
-                    className={`rounded-xl border px-4 py-3 ${addr.is_default ? "border-[#D4AF37] bg-[#FFF9ED]" : "border-[#E5D8C2]"}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1 text-sm text-[#3E2723]">
-                        <div className="flex items-center gap-2 font-semibold">
-                          <span>{addr.label || "Address"}</span>
-                          {addr.is_default && <span className="text-xs text-[#D4AF37] font-semibold">Default</span>}
-                        </div>
-                        <p className="text-[#6B4A3A]">{addr.full_name}</p>
-                        <p className="text-[#6B4A3A]">{addr.phone}</p>
-                        <p className="text-[#6B4A3A]">{addr.line1}</p>
-                        {addr.line2 && <p className="text-[#6B4A3A]">{addr.line2}</p>}
-                        <p className="text-[#6B4A3A]">{[addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ")}</p>
-                        {addr.country && <p className="text-[#6B4A3A]">{addr.country}</p>}
-                      </div>
-                      <div className="flex flex-col gap-2 text-sm">
-                        {!addr.is_default && (
-                          <button
-                            onClick={() => handleSetDefault(addr.id)}
-                            className="px-3 py-1 rounded-lg border border-[#D4AF37] text-[#3E2723] hover:bg-[#FFF6E5]"
-                          >
-                            Set default
-                          </button>
+          {isLoadingAddresses ? (
+            <div className="text-[#6B4A3A]">Loading...</div>
+          ) : addresses.length === 0 ? (
+            <div className="text-[#6B4A3A]">
+              No addresses added yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {addresses.map((addr) => (
+                <div
+                  key={addr.id}
+                  className={`p-6 rounded-2xl border ${
+                    addr.is_default
+                      ? "border-[#D4AF37] bg-[#FFF9ED]"
+                      : "border-[#E5D8C2]"
+                  }`}
+                >
+                  <div className="flex justify-between">
+                    <div>
+                      <div className="font-semibold">
+                        {addr.label}
+                        {addr.is_default && (
+                          <span className="ml-3 text-xs text-[#B08938]">
+                            Default
+                          </span>
                         )}
-                        <button
-                          onClick={() => handleDelete(addr.id)}
-                          className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
-                        >
-                          Delete
-                        </button>
+                      </div>
+                      <div className="text-sm text-[#6B4A3A]">
+                        {addr.full_name}
+                      </div>
+                      <div className="text-sm text-[#6B4A3A]">
+                        {addr.line1}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-[0_20px_60px_rgba(62,39,35,0.08)] border border-[#D4AF37]/20 space-y-3">
-            <div className="flex items-center gap-2 text-[#B08938] text-sm font-semibold">
-              <ShieldCheck className="w-4 h-4" />
-              Security tips
+                    <div className="flex flex-col gap-2">
+                      {!addr.is_default && (
+                        <button
+                          onClick={() =>
+                            handleSetDefault(addr.id)
+                          }
+                          className="text-sm border px-3 py-1 rounded-lg"
+                        >
+                          Set Default
+                        </button>
+                      )}
+                      <button
+                        onClick={() =>
+                          handleDelete(addr.id)
+                        }
+                        className="text-sm text-red-600 border border-red-300 px-3 py-1 rounded-lg"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <ul className="space-y-2 text-sm text-[#6B4A3A] list-disc list-inside">
-              <li>Use a strong, unique password.</li>
-              <li>Sign out on shared devices.</li>
-              <li>Keep your contact details up to date.</li>
-            </ul>
-          </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- COMPONENTS ---------- */
+
+function StatCard({ title, value }: any) {
+  return (
+    <div className="p-6 rounded-2xl border border-[#E5D8C2] bg-[#FFFBF3]">
+      <p className="text-xs uppercase tracking-widest text-[#B08938]">
+        {title}
+      </p>
+      <p className="text-2xl font-bold text-[#2C1F1B] mt-2">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuickLink({ to, icon: Icon, label }: any) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center justify-between p-4 border rounded-xl hover:shadow-md transition"
+    >
+      <div className="flex items-center gap-3">
+        <Icon size={18} />
+        <span className="font-medium">{label}</span>
+      </div>
+      <span className="text-xs text-[#B08938]">Open →</span>
+    </Link>
+  );
+}
+
+function PremiumInput(props: any) {
+  return (
+    <input
+      {...props}
+      className="border rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#D4AF37] outline-none"
+    />
   );
 }

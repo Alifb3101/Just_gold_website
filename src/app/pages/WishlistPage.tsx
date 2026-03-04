@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Heart, ShoppingBag, Trash2, Share2, Star } from 'lucide-react';
 import { useWishlist } from '@/app/contexts/WishlistContext';
@@ -7,13 +7,37 @@ import { useApp } from '@/app/contexts/AppContext';
 import { motion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 
+const toProductSlugSegment = (name: string): string =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
 export function WishlistPage() {
   const { items, removeFromWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { convertPrice } = useApp();
+  const [addingItemId, setAddingItemId] = useState<string | null>(null);
+  const [addedItemId, setAddedItemId] = useState<string | null>(null);
 
-  const handleAddToCart = (item: any) => {
-    addToCart(String(item.id), 1, { name: item.name, image: item.image });
+  const handleAddToCart = async (item: any) => {
+    const itemId = String(item.id);
+    if (!item.inStock || addingItemId === itemId) return;
+
+    setAddingItemId(itemId);
+    await addToCart(
+      String(item.productId),
+      item.productVariantId ? String(item.productVariantId) : undefined,
+      1,
+      { name: item.name, image: item.image }
+    );
+    setAddingItemId(null);
+    setAddedItemId(itemId);
+    window.setTimeout(() => {
+      setAddedItemId((current) => (current === itemId ? null : current));
+    }, 1200);
   };
 
   const handleAddAllToCart = () => {
@@ -96,8 +120,14 @@ export function WishlistPage() {
 
         {/* Wishlist Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {items.map((item, index) => (
-            <Link key={item.id} to={`/product/${item.id}`} className="block">
+          {items.map((item, index) => {
+            const slugSegment = toProductSlugSegment(item.name);
+            const productPath = slugSegment
+              ? `/product/${item.productId}-${slugSegment}`
+              : `/product/${item.productId}`;
+
+            return (
+            <Link key={item.id} to={productPath} className="block">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -109,7 +139,7 @@ export function WishlistPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  removeFromWishlist(String(item.id));
+                  removeFromWishlist(String(item.productId), item.productVariantId ? String(item.productVariantId) : undefined);
                 }}
                 className="absolute top-3 right-3 z-20 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-md group"
               >
@@ -155,7 +185,7 @@ export function WishlistPage() {
                       <Star
                         key={i}
                         className={`w-3 h-3 ${
-                          i < item.rating
+                          i < (item.rating ?? 0)
                             ? 'fill-[#D4AF37] text-[#D4AF37]'
                             : 'fill-gray-200 text-gray-200'
                         }`}
@@ -167,14 +197,20 @@ export function WishlistPage() {
 
                 {/* Price */}
                 <div className="flex items-center gap-2 mb-3">
-                  {item.originalPrice && (
-                    <span className="text-sm text-gray-400 line-through">
-                      {convertPrice(item.originalPrice)}
+                  {typeof (item as any).discountedPrice === 'number' && (item as any).discountedPrice < item.price ? (
+                    <>
+                      <span className="text-sm text-gray-400 line-through">
+                        {convertPrice(item.price)}
+                      </span>
+                      <span className="font-bold text-lg text-[#D4AF37]">
+                        {convertPrice((item as any).discountedPrice)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-bold text-lg text-[#D4AF37]">
+                      {convertPrice(item.price)}
                     </span>
                   )}
-                  <span className="font-bold text-lg text-[#D4AF37]">
-                    {convertPrice(item.price)}
-                  </span>
                 </div>
 
                 {/* Add to Cart Button */}
@@ -184,14 +220,28 @@ export function WishlistPage() {
                     e.stopPropagation();
                     handleAddToCart(item);
                   }}
-                  disabled={!item.inStock}
+                  disabled={!item.inStock || addingItemId === item.id}
                   className={`w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all duration-300 z-20 relative ${
-                    item.inStock
+                    addedItemId === item.id
+                      ? 'bg-green-500 text-white'
+                      : addingItemId === item.id
+                      ? 'bg-[#C4A037] text-white'
+                      : item.inStock
                       ? 'bg-[#D4AF37] text-white hover:bg-[#C4A037]'
                       : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  {item.inStock ? (
+                  {addingItemId === item.id ? (
+                    <>
+                      <span className="animate-spin">◌</span>
+                      Adding...
+                    </>
+                  ) : addedItemId === item.id ? (
+                    <>
+                      <span>✓</span>
+                      Added!
+                    </>
+                  ) : item.inStock ? (
                     <>
                       <ShoppingBag className="w-4 h-4" />
                       Add to Cart
@@ -211,7 +261,7 @@ export function WishlistPage() {
               <div className="absolute inset-0 border-2 border-transparent group-hover:border-[#D4AF37]/50 transition-all duration-300 rounded-lg pointer-events-none" />
             </motion.div>
             </Link>
-          ))}
+          )})}
         </div>
       </div>
     </div>

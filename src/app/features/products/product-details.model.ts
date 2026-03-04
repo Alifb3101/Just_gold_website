@@ -10,6 +10,7 @@ export interface ProductImage {
 export interface ProductShade {
   id: string;
   name: string;
+  productId?: string;
   colorHex?: string;
   colorPanelType?: 'hex' | 'gradient' | 'image';
   colorPanelValue?: string;

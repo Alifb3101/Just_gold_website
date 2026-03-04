@@ -9,6 +9,7 @@ export interface ProductListItem {
   hoverImageUrl?: string;
   shortDescription?: string;
   inStock: boolean;
+  tag?: string;
 }
 
 export interface ProductListPage {

@@ -122,7 +122,7 @@ function LogoBlock({ logo }) {
 
       </div>
 
-      <style jsx>{`
+      <style>{`
         .logo-circle {
           transition: all 0.4s ease;
           backdrop-filter: blur(6px);

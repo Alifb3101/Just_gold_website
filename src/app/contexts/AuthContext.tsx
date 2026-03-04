@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useCall
 import { login as apiLogin, register as apiRegister, type LoginResponse, type RegisterResponse } from "@/services/authService";
 import { fetchCurrentUser, type CurrentUser } from "@/services/userService";
 import { ApiError } from "@/app/api/http";
+import { useCartStore } from "@/store/cartStore";
 
 const STORAGE_KEY = "auth_token";
 const EMAIL_KEY = "auth_email";
@@ -57,6 +58,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persistBasics({ token: null, email: null, phone: null, name: null });
   }, [persistBasics]);
 
+  const refreshCartAfterAuth = useCallback(() => {
+    try {
+      const store = useCartStore.getState();
+      if (store?.fetchCart) {
+        store.fetchCart();
+      }
+    } catch {
+      // no-op
+    }
+  }, []);
+
   const hydrateFromStorage = useCallback(async () => {
     const storedToken = localStorage.getItem(STORAGE_KEY);
     const storedEmail = localStorage.getItem(EMAIL_KEY);
@@ -102,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await apiLogin(emailInput, password);
     persistBasics({ token: res.token, email: emailInput });
     await refreshUser(res.token).catch(() => {});
+    refreshCartAfterAuth();
     return res;
   };
 

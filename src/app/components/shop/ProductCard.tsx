@@ -28,23 +28,23 @@ export const ProductCard = React.memo(function ProductCard({
     return `/product/${slugSegment}`;
   }, [product.id, product.slug]);
 
-  const variantId = String(product.id);
-  const isWishlisted = isInWishlist(variantId);
+  const productId = String(product.id);
+  const isWishlisted = isInWishlist(productId);
 
   const handleWishlistToggle = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       if (isWishlisted) {
-        removeFromWishlist(variantId);
+        removeFromWishlist(productId);
       } else {
-        addToWishlist(variantId, {
+        addToWishlist(productId, undefined, {
           name: product.name,
           image: product.thumbnailUrl || product.imageUrl,
         });
       }
     },
-    [variantId, isWishlisted, addToWishlist, removeFromWishlist, product]
+    [productId, isWishlisted, addToWishlist, removeFromWishlist, product]
   );
 
   const handleAddToCart = useCallback(
@@ -55,14 +55,14 @@ export const ProductCard = React.memo(function ProductCard({
 
       setIsAdding(true);
 
-      addToCart(variantId, 1, {
+      addToCart(productId, undefined, 1, {
         name: product.name,
         image: product.thumbnailUrl || product.imageUrl,
       });
 
       setTimeout(() => setIsAdding(false), 700);
     },
-    [variantId, product, addToCart]
+    [productId, product, addToCart]
   );
 
   const image = product.thumbnailUrl || product.imageUrl;

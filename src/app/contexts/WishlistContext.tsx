@@ -8,10 +8,15 @@ import { ApiError } from '@/app/api/http';
 export interface WishlistItem {
   id: string;
   productId: string;
+  productVariantId?: string | null;
   name: string;
   image: string;
   price: number;
   category?: string;
+  colorPanelType?: string | null;
+  colorPanelValue?: string | null;
+  variantModelNo?: string | null;
+  productModelNo?: string | null;
   rating?: number;
   reviews?: number;
   inStock: boolean;
@@ -20,9 +25,13 @@ export interface WishlistItem {
 
 interface WishlistContextType {
   items: WishlistItem[];
-  addToWishlist: (productVariantId: string, meta?: { name?: string; image?: string }) => Promise<void>;
-  removeFromWishlist: (variantId: string) => Promise<void>;
-  isInWishlist: (variantId: string) => boolean;
+  addToWishlist: (
+    productId: string,
+    productVariantId?: string,
+    meta?: { name?: string; image?: string }
+  ) => Promise<void>;
+  removeFromWishlist: (productId: string, productVariantId?: string | null) => Promise<void>;
+  isInWishlist: (productId: string, productVariantId?: string | null) => boolean;
   wishlistCount: number;
   isLoading: boolean;
   refresh: () => Promise<void>;
@@ -30,15 +39,27 @@ interface WishlistContextType {
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
+const buildWishlistItemKey = (productId: string, productVariantId?: string | null) =>
+  productVariantId ? `${productId}:${productVariantId}` : `${productId}:base`;
+
 const mapWishlistItem = (item: WishlistItemApi, prevItems: WishlistItem[]): WishlistItem => {
-  const existing = prevItems.find((p) => p.id === String(item.product_variant_id));
+  const productId = String(item.product_id);
+  const productVariantId = item.product_variant_id ? String(item.product_variant_id) : null;
+  const itemId = buildWishlistItemKey(productId, productVariantId);
+  const existing = prevItems.find((p) => p.id === itemId);
+
   return {
-    id: String(item.product_variant_id),
-    productId: String(item.product_id),
+    id: itemId,
+    productId,
+    productVariantId,
     name: item.product_name,
-    image: existing?.image || '',
+    image: item.main_image || item.secondary_image || existing?.image || '',
     price: Number(item.current_price),
-    category: 'Beauty',
+    category: item.product_model_no ? `Model No: ${item.product_model_no}` : undefined,
+    colorPanelType: item.color_panel_type,
+    colorPanelValue: item.color_panel_value,
+    variantModelNo: item.variant_model_no,
+    productModelNo: item.product_model_no,
     rating: existing?.rating ?? 0,
     reviews: existing?.reviews ?? 0,
     inStock: item.stock > 0,
@@ -52,8 +73,13 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const syncFromResponse = useCallback((data?: Partial<WishlistResponse> | null) => {
-    const itemsArray = Array.isArray(data?.items) ? data.items : [];
+    if (!data || !Array.isArray(data.items)) {
+      return false;
+    }
+
+    const itemsArray = data.items;
     setItems((prev) => itemsArray.map((item) => mapWishlistItem(item, prev)));
+    return true;
   }, []);
 
   const handleApiError = useCallback((err: unknown, action: string) => {
@@ -86,35 +112,105 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const addToWishlist = useCallback(async (variantId: string, meta?: { name?: string; image?: string }) => {
+  const addToWishlist = useCallback(async (
+    productId: string,
+    productVariantId?: string,
+    meta?: { name?: string; image?: string }
+  ) => {
     if (!token) {
       toast.error('Please login to use wishlist');
       return;
     }
+    const itemId = buildWishlistItemKey(productId, productVariantId ?? null);
+    const hasExisting = items.some((item) =>
+      productVariantId
+        ? item.productId === String(productId) && item.productVariantId === String(productVariantId)
+        : item.productId === String(productId)
+    );
+
+    if (!hasExisting) {
+      setItems((prev) => [
+        {
+          id: itemId,
+          productId,
+          productVariantId: productVariantId ?? null,
+          name: meta?.name ?? 'Product',
+          image: meta?.image ?? '',
+          price: 0,
+          inStock: true,
+          addedDate: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
+
     try {
-      const data = await apiAddToWishlist(token, variantId);
-      syncFromResponse(data);
+      const data = await apiAddToWishlist(token, {
+        productId: Number(productId),
+        ...(productVariantId ? { productVariantId: Number(productVariantId) } : {}),
+      });
+      const updated = syncFromResponse(data);
+      if (!updated) {
+        await refresh();
+      }
       toast.success(meta?.name ? `Saved ${meta.name}` : 'Added to wishlist');
     } catch (err) {
+      if (!hasExisting) {
+        setItems((prev) => prev.filter((item) => item.id !== itemId));
+      }
       handleApiError(err, 'Add to wishlist');
     }
-  }, [token, syncFromResponse, handleApiError]);
+  }, [token, items, syncFromResponse, handleApiError, refresh]);
 
-  const removeFromWishlist = useCallback(async (variantId: string) => {
+  const removeFromWishlist = useCallback(async (productId: string, productVariantId?: string | null) => {
     if (!token) {
       toast.error('Please login to use wishlist');
       return;
     }
+
+    const normalizedProductId = String(productId);
+    const matchingItems = items.filter((item) => item.productId === normalizedProductId);
+    const resolvedVariantId =
+      productVariantId !== undefined && productVariantId !== null
+        ? String(productVariantId)
+        : matchingItems[0]?.productVariantId ?? null;
+
+    if (!matchingItems.length) {
+      return;
+    }
+
+    const previousItems = items;
+    setItems((prev) =>
+      prev.filter((item) => {
+        if (resolvedVariantId) {
+          return !(item.productId === normalizedProductId && item.productVariantId === resolvedVariantId);
+        }
+        return item.productId !== normalizedProductId;
+      })
+    );
+
     try {
-      const data = await apiRemoveFromWishlist(token, variantId);
-      syncFromResponse(data);
+      const data = await apiRemoveFromWishlist(token, {
+        productId: normalizedProductId,
+        productVariantId: resolvedVariantId,
+      });
+      const updated = syncFromResponse(data);
+      if (!updated) {
+        await refresh();
+      }
       toast.success('Removed from wishlist');
     } catch (err) {
+      setItems(previousItems);
       handleApiError(err, 'Remove from wishlist');
     }
-  }, [token, syncFromResponse, handleApiError]);
+  }, [token, items, syncFromResponse, handleApiError, refresh]);
 
-  const isInWishlist = useCallback((variantId: string) => items.some((item) => item.id === String(variantId)), [items]);
+  const isInWishlist = useCallback((productId: string, productVariantId?: string | null) => {
+    if (productVariantId) {
+      return items.some((item) => item.productId === String(productId) && item.productVariantId === String(productVariantId));
+    }
+    return items.some((item) => item.productId === String(productId));
+  }, [items]);
 
   const wishlistCount = useMemo(() => items.length, [items]);
 

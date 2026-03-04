@@ -33,8 +33,8 @@ export const ShopProductCard = React.memo(function ShopProductCard({
   const hoverImage = product.hoverImageUrl || product.alternateImage;
   const hasHoverImage = Boolean(hoverImage);
 
-  const variantId = String(product.id);
-  const isWishlisted = isInWishlist(variantId);
+  const productId = String(product.id);
+  const isWishlisted = isInWishlist(productId);
   const rating = product.rating ?? 0;
   const reviews = product.reviews ?? 0;
   const productPath = useMemo(() => {
@@ -44,7 +44,7 @@ export const ShopProductCard = React.memo(function ShopProductCard({
 
   const handleAddToCart = async () => {
     setIsAdding(true);
-    addToCart(variantId, 1, {
+    addToCart(productId, undefined, 1, {
       name: product.name,
       image: baseImage,
     });
@@ -55,9 +55,9 @@ export const ShopProductCard = React.memo(function ShopProductCard({
     e.preventDefault();
     e.stopPropagation();
     if (isWishlisted) {
-      removeFromWishlist(variantId);
+      removeFromWishlist(productId);
     } else {
-      addToWishlist(variantId, { name: product.name, image: baseImage });
+      addToWishlist(productId, undefined, { name: product.name, image: baseImage });
     }
   };
 
