@@ -42,7 +42,7 @@ type ApiHomepagePayload = {
 	};
 };
 
-const ENDPOINT = '/api/homepage';
+const ENDPOINT = '/homepage';
 const CACHE_TTL = 5 * 60 * 1000;
 
 let cachedHomepage: HomepageData | null = null;

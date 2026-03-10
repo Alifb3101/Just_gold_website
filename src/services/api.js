@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.trim() || '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim();
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL is not defined');
+}
 const API_TIMEOUT_MS = 12000;
 
 const unauthorizedListeners = new Set();

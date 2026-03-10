@@ -12,7 +12,7 @@ export type CurrentUser = {
 };
 
 export async function fetchCurrentUser(token: string, signal?: AbortSignal): Promise<CurrentUser> {
-  return fetchJson<CurrentUser>("/api/v1/users/me", {
+  return fetchJson<CurrentUser>("/users/me", {
     headers: {
       ...authHeader(token),
       "Content-Type": "application/json",

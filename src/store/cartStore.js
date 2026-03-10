@@ -18,49 +18,18 @@ const hasAuthToken = () => {
   }
 };
 
-const postWithFallback = async (
-  primaryPath,
-  fallbackPath,
-  payload,
-  { fallbackAtRoot = false } = {}
-) => {
-  try {
-    debugCheckout('POST primary', {
-      path: primaryPath,
-      payloadKeys: Object.keys(payload ?? {}),
-      payment_method: payload?.payment_method,
-    });
-    return await api.post(primaryPath, payload);
-  } catch (error) {
-    debugCheckout('POST primary failed', {
-      path: primaryPath,
-      status: Number(error?.response?.status ?? 0),
-      message: error?.response?.data?.message || error?.message,
-    });
-    if (!isNotFound(error)) throw error;
-    debugCheckout('POST fallback', {
-      path: fallbackPath,
-      payloadKeys: Object.keys(payload ?? {}),
-      payment_method: payload?.payment_method,
-    });
-    return api.post(fallbackPath, payload, fallbackAtRoot ? { baseURL: '' } : undefined);
-  }
+const postWithFallback = async (path, _fallbackPath, payload) => {
+  debugCheckout('POST', {
+    path,
+    payloadKeys: Object.keys(payload ?? {}),
+    payment_method: payload?.payment_method,
+  });
+  return api.post(path, payload);
 };
 
-const getWithFallback = async (primaryPath, fallbackPath, { fallbackAtRoot = false } = {}) => {
-  try {
-    debugCheckout('GET primary', { path: primaryPath });
-    return await api.get(primaryPath);
-  } catch (error) {
-    debugCheckout('GET primary failed', {
-      path: primaryPath,
-      status: Number(error?.response?.status ?? 0),
-      message: error?.response?.data?.message || error?.message,
-    });
-    if (!isNotFound(error)) throw error;
-    debugCheckout('GET fallback', { path: fallbackPath });
-    return api.get(fallbackPath, fallbackAtRoot ? { baseURL: '' } : undefined);
-  }
+const getWithFallback = async (path) => {
+  debugCheckout('GET', { path });
+  return api.get(path);
 };
 
 const toShippingAddressPayload = (shippingAddress = {}) => ({
@@ -110,9 +79,7 @@ const createCheckoutSession = async ({ paymentMethod, shippingAddressId, shippin
     payloadKeys: Object.keys(payload ?? {}),
   });
 
-  return postWithFallback('/checkout/create-session', '/api/checkout/create-session', payload, {
-    fallbackAtRoot: true,
-  });
+  return postWithFallback('/checkout/create-session', null, payload);
 };
 
 const normalizeAddressList = (data) => {
@@ -144,9 +111,7 @@ const resolveAddressId = async (shippingAddress) => {
     line1: shippingAddress?.address_line_1,
   });
 
-  const listResponse = await getWithFallback('/addresses', '/api/addresses', {
-    fallbackAtRoot: true,
-  });
+  const listResponse = await getWithFallback('/addresses');
   const addresses = normalizeAddressList(listResponse.data);
 
   debugCheckout('address list loaded', {
@@ -170,20 +135,12 @@ const resolveAddressId = async (shippingAddress) => {
   const payload = toAddressCreatePayload(shippingAddress);
 
   try {
-    debugCheckout('address create primary', { path: '/addresses' });
+    debugCheckout('address create', { path: '/addresses' });
     const createResponse = await api.post('/addresses', payload);
     debugCheckout('address create success', { id: Number(createResponse.data?.id) });
     return Number(createResponse.data?.id);
   } catch (error) {
-    debugCheckout('address create primary failed', {
-      status: Number(error?.response?.status ?? 0),
-      message: error?.response?.data?.message || error?.message,
-    });
-    if (!isNotFound(error)) throw error;
-    debugCheckout('address create fallback', { path: '/api/addresses' });
-    const createResponse = await api.post('/api/addresses', payload, { baseURL: '' });
-    debugCheckout('address create fallback success', { id: Number(createResponse.data?.id) });
-    return Number(createResponse.data?.id);
+    throw error;
   }
 };
 
@@ -491,21 +448,13 @@ export const useCartStore = create((set, get) => ({
 
   verifyStripeSession: async (sessionId) => {
     const encodedSession = encodeURIComponent(sessionId);
-    const response = await getWithFallback(
-      `/orders/verify?session_id=${encodedSession}`,
-      `/api/orders/verify?session_id=${encodedSession}`,
-      { fallbackAtRoot: true }
-    );
+    const response = await getWithFallback(`/orders/verify?session_id=${encodedSession}`);
     return response.data;
   },
 
   getGuestOrder: async (orderId) => {
     const encodedId = encodeURIComponent(orderId);
-    const response = await getWithFallback(
-      `/checkout/guest-order/${encodedId}`,
-      `/api/checkout/guest-order/${encodedId}`,
-      { fallbackAtRoot: true }
-    );
+    const response = await getWithFallback(`/checkout/guest-order/${encodedId}`);
     return response.data;
   },
 }));

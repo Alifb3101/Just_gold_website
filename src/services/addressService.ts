@@ -27,7 +27,7 @@ export type CreateAddressInput = {
   country?: string;
 };
 
-const BASE = "/api/v1/addresses";
+const BASE = "/addresses";
 
 export async function listAddresses(token: string, signal?: AbortSignal): Promise<Address[]> {
   return fetchJson<Address[]>(BASE, {

@@ -1,21 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE_URL = (() => {
-  // Prefer explicit env var
-  const envBase = import.meta.env.VITE_API_BASE_URL;
-  if (envBase) return envBase;
-
-  // Fallback: same host as frontend, but port 5000
-  try {
-    const url = new URL(window.location.origin);
-    url.port = "5000";
-    return url.toString().replace(/\/$/, "");
-  } catch {
-    return "https://just-gold-backend-render.onrender.com";
-  }
-})();
+import { apiFetch } from "@/lib/apiClient";
 
 export default function Orders() {
   const navigate = useNavigate();
@@ -33,18 +19,13 @@ export default function Orders() {
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/orders`, {
+        const data = await apiFetch("/orders", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch orders");
-        }
-
-        const data = await response.json();
         setOrders(data || []);
       } catch (error) {
         console.error("Error loading orders:", error);

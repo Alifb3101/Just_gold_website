@@ -6,7 +6,7 @@ export type LoginResponse = { token: string };
 export type RegisterResponse = { id: number; email: string; role: string };
 
 export async function login(email: string, password: string, signal?: AbortSignal): Promise<LoginResponse> {
-  return fetchJson<LoginResponse>("/api/v1/auth/login", {
+  return fetchJson<LoginResponse>("/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -24,7 +24,7 @@ export async function login(email: string, password: string, signal?: AbortSigna
     phone?: string,
     signal?: AbortSignal
   ): Promise<RegisterResponse> {
-    return fetchJson<RegisterResponse>("/api/v1/auth/register", {
+    return fetchJson<RegisterResponse>("/auth/register", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

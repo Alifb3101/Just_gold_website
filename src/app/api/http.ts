@@ -1,3 +1,5 @@
+import { buildApiUrl as centralBuildApiUrl, ASSET_BASE_URL as centralAssetBaseUrl } from '@/lib/apiClient';
+
 export class ApiError extends Error {
   status: number;
   details?: unknown;
@@ -9,22 +11,8 @@ export class ApiError extends Error {
   }
 }
 
-const resolveApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
-  if (envUrl && envUrl.trim().length > 0) return envUrl;
-  if (import.meta.env.DEV) return '/api/v1';
-  return 'https://just-gold-backend-render.onrender.com/api/v1';
-};
-
-const resolveAssetBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_ASSET_URL as string | undefined;
-  if (envUrl && envUrl.trim().length > 0) return envUrl;
-  if (import.meta.env.DEV) return '';
-  return 'https://just-gold-backend-render.onrender.com';
-};
-
-export const API_BASE_URL = resolveApiBaseUrl();
-export const ASSET_BASE_URL = resolveAssetBaseUrl();
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+export const ASSET_BASE_URL = centralAssetBaseUrl;
 
 type FetchJsonOptions = RequestInit & {
   timeoutMs?: number;
@@ -33,24 +21,7 @@ type FetchJsonOptions = RequestInit & {
 
 const buildApiUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) return path;
-
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const baseIsRelative = API_BASE_URL.startsWith('/');
-
-  // If we have an absolute API base (env points to remote), always prepend it.
-  if (!baseIsRelative) {
-    const base = API_BASE_URL.replace(/\/+$/, '');
-    const trimmedPath =
-      base.endsWith('/api/v1') && normalizedPath.startsWith('/api/v1')
-        ? normalizedPath.replace(/^\/api\/v1/, '')
-        : normalizedPath;
-    return `${base}${trimmedPath}`;
-  }
-
-  // Otherwise allow direct /api hits to flow through the Vite proxy in dev.
-  if (normalizedPath === '/api' || normalizedPath.startsWith('/api/')) return normalizedPath;
-
-  return `${API_BASE_URL}${normalizedPath}`;
+  return centralBuildApiUrl(path);
 };
 
 const isAbortError = (error: unknown) =>
