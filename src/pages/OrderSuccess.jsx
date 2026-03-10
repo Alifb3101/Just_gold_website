@@ -1,40 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useCartStore } from '@/store/cartStore';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { useCartStore } from "@/store/cartStore";
+import { useCart } from "@/app/contexts/CartContext";
 
 const verificationCache = new Map();
 
-const formatDate = (value) => {
-  if (!value) return 'N/A';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'N/A';
-  return parsed.toLocaleDateString('en-AE', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
 const formatMoney = (value) => {
   const amount = Number(value ?? 0) || 0;
-  return new Intl.NumberFormat('en-AE', {
-    style: 'currency',
-    currency: 'AED',
-    maximumFractionDigits: 2,
+
+  return new Intl.NumberFormat("en-AE", {
+    style: "currency",
+    currency: "AED",
   }).format(amount);
 };
 
-function SuccessSkeleton() {
+function Row({ label, value }) {
   return (
-    <div className="mx-auto max-w-3xl rounded-2xl border border-[#E7DBC2] bg-white p-6 lg:p-8 animate-pulse">
-      <div className="h-7 w-48 bg-[#EFE4CC] rounded" />
-      <div className="mt-2 h-4 w-72 bg-[#EFE4CC] rounded" />
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-xl bg-[#F7F1E4]" />
-        ))}
-      </div>
+    <div className="flex justify-between text-sm text-[#7A6A4D] py-1">
+      <span>{label}</span>
+      <span className="font-semibold text-[#3E2723]">{value}</span>
     </div>
   );
 }
@@ -42,256 +27,276 @@ function SuccessSkeleton() {
 export default function OrderSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get('session_id') || '';
-  const codOrderNo = searchParams.get('order_no') || '';
-  const paymentType = searchParams.get('payment') || (sessionId ? 'stripe' : 'cod');
-  const orderIdParam = searchParams.get('order_id') || searchParams.get('orderId') || '';
 
-  const verifyStripeSession = useCartStore((state) => state.verifyStripeSession);
-  const getGuestOrder = useCartStore((state) => state.getGuestOrder);
+  const sessionId = searchParams.get("session_id") || "";
+  const orderIdParam =
+    searchParams.get("order_id") || searchParams.get("orderId") || "";
+
+  const verifyStripeSession = useCartStore((s) => s.verifyStripeSession);
+  const getGuestOrder = useCartStore((s) => s.getGuestOrder);
+  const clearZustandCart = useCartStore((s) => s.clearCartLocal);
+  const { clearCartLocal: clearContextCart } = useCart();
+
+  const clearedRef = useRef(false);
 
   const [state, setState] = useState({
-    isLoading: Boolean(sessionId || orderIdParam),
-    error: '',
+    isLoading: true,
     data: null,
+    error: "",
   });
-  const [isEntering, setIsEntering] = useState(false);
 
+  // Clear cart once on mount after successful order
   useEffect(() => {
-    setIsEntering(true);
+    if (clearedRef.current) return;
+    clearedRef.current = true;
+    clearZustandCart();
+    clearContextCart();
   }, []);
 
   useEffect(() => {
-    const cached = sessionId ? verificationCache.get(sessionId) : null;
-
     let active = true;
 
-    const loadGuestOrder = async (orderId) => {
-      if (!orderId) return null;
+    const hydrate = async () => {
       try {
-        const response = await getGuestOrder(orderId);
-        if (!active) return null;
-        return response?.data ?? response;
-      } catch (error) {
-        if (!active) return null;
-        console.error('[order-success] guest-order failed', error);
-        toast.error('Unable to load order details. Please refresh.');
-        return null;
-      }
-    };
+        if (sessionId) {
+          const res =
+            verificationCache.get(sessionId) ||
+            (await verifyStripeSession(sessionId));
 
-    const loadFromSession = () => {
-      try {
-        const raw = sessionStorage.getItem('last_order_payload');
-        if (!raw) return null;
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    };
+          const payload = res?.data ?? res;
+          verificationCache.set(sessionId, payload);
 
-    const hydrateFromStripe = async () => {
-      setState((prev) => ({ ...prev, isLoading: true, error: '' }));
-      try {
-        const response = cached || (await verifyStripeSession(sessionId));
-        if (!active) return;
+          const orderId = payload?.order_id || payload?.orderId;
+          const order = await getGuestOrder(orderId);
 
-        const payload = response?.data ?? response;
-        verificationCache.set(sessionId, payload);
+          if (!active) return;
 
-        const stripeOrderId = payload?.order_id || payload?.orderId;
-        const storedOrderId = sessionStorage.getItem('last_order_id') || '';
-        const guestOrder = await loadGuestOrder(stripeOrderId || orderIdParam || storedOrderId);
-        const sessionFallback = guestOrder || loadFromSession();
+          setState({
+            isLoading: false,
+            data: order?.data ?? order ?? payload,
+            error: "",
+          });
+        } else if (orderIdParam) {
+          const order = await getGuestOrder(orderIdParam);
 
+          setState({
+            isLoading: false,
+            data: order?.data ?? order,
+            error: "",
+          });
+        }
+      } catch (e) {
         setState({
           isLoading: false,
-          error: '',
-          data: sessionFallback || payload,
-        });
-      } catch (error) {
-        if (!active) return;
-        setState({
-          isLoading: false,
-          error: 'We could not verify your payment right now. Redirecting to home...',
+          error: "Unable to verify order",
           data: null,
         });
       }
     };
 
-    const hydrateFromOrderIdOnly = async () => {
-      const storedOrderId = sessionStorage.getItem('last_order_id') || '';
-      const targetId = orderIdParam || storedOrderId;
-      if (!targetId) return;
-      setState((prev) => ({ ...prev, isLoading: true, error: '' }));
-      const guestOrder = await loadGuestOrder(targetId);
-      const sessionFallback = guestOrder || loadFromSession();
-      if (!active) return;
-      if (guestOrder || sessionFallback) {
-        setState({ isLoading: false, error: '', data: guestOrder || sessionFallback });
-      } else {
-        setState({
-          isLoading: false,
-          error: 'Unable to load order details right now.',
-          data: null,
-        });
-      }
-    };
-
-    if (sessionId) {
-      void hydrateFromStripe();
-      return () => {
-        active = false;
-      };
-    }
-
-    const storedOrderId = sessionStorage.getItem('last_order_id') || '';
-    if (orderIdParam || storedOrderId) {
-      void hydrateFromOrderIdOnly();
-      return () => {
-        active = false;
-      };
-    }
-
-    // COD / fallback display if nothing to load
-    const sessionFallback = loadFromSession();
-    setState({
-      isLoading: false,
-      error: '',
-      data:
-        sessionFallback || {
-          order_number: codOrderNo || 'N/A',
-          payment_status: 'pending',
-          total_amount: 0,
-          shipping_address: null,
-          estimated_delivery: null,
-        },
-    });
+    hydrate();
 
     return () => {
       active = false;
     };
-  }, [sessionId, codOrderNo, verifyStripeSession, getGuestOrder, orderIdParam]);
-
-  useEffect(() => {
-    if (!state.error) return;
-    toast.error('Order verification failed. Redirecting to home.');
-    const timer = window.setTimeout(() => navigate('/', { replace: true }), 5000);
-    return () => window.clearTimeout(timer);
-  }, [state.error, navigate]);
+  }, [sessionId, orderIdParam, verifyStripeSession, getGuestOrder]);
 
   const display = useMemo(() => {
     if (!state.data) return null;
 
-    const payload = state.data?.data ?? state.data; // support {data:{...}}
-
-    const shipping = payload.shipping_address ?? payload.shippingAddress ?? null;
-    const contact = payload.contact ?? {
-      email: payload.guest_email ?? payload.guestEmail,
-      full_name: payload.guest_full_name ?? payload.guestFullName,
-      phone: payload.guest_phone ?? payload.guestPhone,
-    };
-    const totals = payload.totals ?? {};
-    const items = Array.isArray(payload.items) ? payload.items : [];
+    const payload = state.data?.data ?? state.data;
 
     return {
-      orderNo: payload.order_number ?? payload.orderNo ?? payload.order_id ?? payload.id ?? 'N/A',
-      paymentStatus: payload.payment_status ?? 'pending',
-      orderStatus: payload.order_status ?? '',
-      paymentMethod: payload.payment_method || paymentType,
-      total: totals.total ?? payload.total_amount ?? payload.total ?? 0,
-      currency: totals.currency ?? payload.currency ?? 'AED',
-      shipping,
-      contact,
-      items,
-      estimatedDelivery: payload.estimated_delivery,
+      orderNo: payload.order_number,
+      paymentStatus: payload.payment_status,
+      orderStatus: payload.order_status,
+      paymentMethod: payload.payment_method,
+      subtotal: payload?.totals?.subtotal,
+      shippingFee: payload?.totals?.shipping_fee,
+      discount: payload?.totals?.discount,
+      total: payload?.totals?.total,
+      items: payload.items || [],
+      shipping: payload.shipping_address,
     };
-  }, [state.data, paymentType]);
+  }, [state.data]);
+
+  if (state.error) {
+    toast.error(state.error);
+    navigate("/");
+  }
 
   return (
-    <main
-      className={`max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14 transition-all duration-300 ease-out ${
-        isEntering ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-      }`}
-    >
-      {state.isLoading ? <SuccessSkeleton /> : null}
+    <main className="min-h-screen bg-[#faf7ef] py-14 px-4">
+      <div className="max-w-7xl mx-auto">
 
-      {!state.isLoading && state.error ? (
-        <div className="mx-auto max-w-3xl rounded-2xl border border-red-300 bg-white p-6 text-center">
-          <h1 className="text-xl font-semibold text-[#3E2723]">Verification in progress</h1>
-          <p className="mt-2 text-sm text-[#7A6A4D]">{state.error}</p>
-        </div>
-      ) : null}
+        {/* HEADER */}
 
-      {!state.isLoading && !state.error && display ? (
-        <section className="mx-auto max-w-3xl rounded-2xl border border-[#E7DBC2] bg-white p-6 lg:p-8">
-          <h1 className="text-2xl font-bold text-[#3E2723]">Order Confirmed</h1>
-          <p className="mt-1 text-sm text-[#7A6A4D]">
-            Your order has been placed successfully via {display.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Stripe'}.
-          </p>
+        <div className="text-center mb-14">
 
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InfoCard label="Order Number" value={display.orderNo} />
-            <InfoCard label="Payment Status" value={String(display.paymentStatus).toUpperCase()} />
-            <InfoCard label="Total Amount" value={formatMoney(display.total)} />
-            <InfoCard label="Payment Method" value={display.paymentMethod || 'Stripe'} />
-            <InfoCard label="Estimated Delivery" value={formatDate(display.estimatedDelivery)} />
-            <InfoCard
-              label="Shipping Address"
-              value={display.shipping
-                ? `${display.shipping.address_line_1 ?? ''} ${display.shipping.city ?? ''} ${display.shipping.emirate ?? ''}`.trim()
-                : 'N/A'}
-              wide
-            />
-            <InfoCard
-              label="Contact"
-              value={display.contact?.email || display.contact?.full_name || display.contact?.phone ? `${display.contact?.full_name ?? ''} ${display.contact?.email ?? ''} ${display.contact?.phone ?? ''}`.trim() : 'N/A'}
-              wide
-            />
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#D4AF37] to-[#f3e3a2] shadow-lg">
+            <svg
+              className="h-12 w-12 text-white"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
           </div>
 
-          {Array.isArray(display.items) && display.items.length > 0 ? (
-            <div className="mt-6 border-t border-[#EFE4CC] pt-4 space-y-3">
-              <p className="text-sm font-semibold text-[#3E2723]">Items</p>
-              <div className="space-y-3">
-                {display.items.map((item, idx) => (
-                  <div key={`${item.id ?? idx}-${item.product_variant_id ?? ''}`} className="flex items-center gap-3 rounded-xl border border-[#EFE4CC] bg-[#FFFDF7] p-3">
-                    {item.thumbnail ? (
-                      <img src={item.thumbnail} alt={item.name} className="h-12 w-12 rounded-lg object-cover bg-[#F6F1EA]" />
-                    ) : null}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#3E2723] truncate">{item.name || item.product_name}</p>
-                      <p className="text-xs text-[#7A6A4D]">
-                        {item.variant?.name || item.variant?.shade ? `${item.variant?.name ?? ''} ${item.variant?.shade ?? ''}`.trim() : ''}
-                      </p>
-                      <p className="text-xs text-[#7A6A4D]">
-                        Qty: {item.quantity} · {formatMoney(item.unit_price ?? item.price ?? 0)} each
-                      </p>
-                    </div>
-                    <p className="text-sm font-bold text-[#3E2723]">{formatMoney(item.total_price ?? (item.unit_price ?? item.price ?? 0) * (item.quantity ?? 1))}</p>
+          <h1 className="text-4xl font-bold text-[#3E2723]">
+            Order Confirmed 🎉
+          </h1>
+
+          <p className="mt-3 text-[#7A6A4D]">
+            Thank you for your purchase.
+          </p>
+
+          <div className="mt-5 inline-flex items-center bg-white border border-[#E7DBC2] px-5 py-2 rounded-full text-sm shadow-sm">
+            Order No:
+            <span className="ml-2 font-semibold">{display?.orderNo}</span>
+          </div>
+
+        </div>
+
+
+        {/* MAIN GRID */}
+
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10 items-start">
+
+          {/* PRODUCTS */}
+
+          <div>
+
+            <h2 className="text-xl font-semibold text-[#3E2723] mb-6">
+              Products Ordered
+            </h2>
+
+            <div className="space-y-4">
+
+              {display?.items.map((item, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[80px_1fr_auto] items-center gap-6 bg-white border border-[#F1E6D0] rounded-xl px-6 py-5 shadow-sm hover:shadow-md transition"
+                >
+
+                  {/* IMAGE */}
+
+                  <img
+                    src={item.thumbnail}
+                    alt={item.name}
+                    className="w-16 h-16 rounded-lg object-cover border border-[#efe6d3]"
+                  />
+
+                  {/* INFO */}
+
+                  <div className="min-w-0">
+
+                    <p className="text-[15px] font-semibold text-[#3E2723] leading-tight">
+                      {item.name}
+                    </p>
+
+                    <p className="text-sm text-[#8A7A5C] mt-1">
+                      {item.variant?.name} · Shade {item.variant?.shade}
+                    </p>
+
+                    <p className="text-sm text-[#8A7A5C]">
+                      Qty {item.quantity}
+                    </p>
+
                   </div>
-                ))}
-              </div>
+
+                  {/* PRICE */}
+
+                  <div className="text-right text-[15px] font-semibold text-[#3E2723] whitespace-nowrap">
+                    {formatMoney(item.total_price)}
+                  </div>
+
+                </div>
+              ))}
+
             </div>
-          ) : null}
 
-          <Link
-            to="/shop"
-            className="mt-7 inline-flex items-center rounded-xl bg-[#D4AF37] px-6 py-3 text-sm font-semibold text-white hover:bg-[#C19B2C] transition"
-          >
-            Continue Shopping
-          </Link>
-        </section>
-      ) : null}
+          </div>
+
+
+          {/* ORDER SUMMARY */}
+
+          <div className="bg-white border border-[#F1E6D0] rounded-2xl p-6 shadow-sm sticky top-24">
+
+            <h2 className="text-lg font-semibold text-[#3E2723] mb-5">
+              Order Summary
+            </h2>
+
+            <div className="space-y-2">
+
+              <Row label="Subtotal" value={formatMoney(display?.subtotal)} />
+              <Row label="Shipping" value={formatMoney(display?.shippingFee)} />
+              <Row label="Discount" value={formatMoney(display?.discount)} />
+
+              <div className="border-t border-[#EFE4CC] pt-4 mt-2 flex justify-between text-base font-semibold text-[#3E2723]">
+                <span>Total</span>
+                <span>{formatMoney(display?.total)}</span>
+              </div>
+
+            </div>
+
+
+            {/* PAYMENT */}
+
+            <div className="mt-6">
+
+              <h3 className="text-sm font-semibold text-[#3E2723] mb-2">
+                Payment
+              </h3>
+
+              <div className="flex justify-between bg-[#FFFDF7] border border-[#EFE4CC] px-3 py-2 rounded-lg text-sm">
+                <span className="capitalize">{display?.paymentMethod}</span>
+
+                <span className="text-xs bg-[#D4AF37]/10 text-[#D4AF37] px-2 py-1 rounded">
+                  {display?.orderStatus}
+                </span>
+              </div>
+
+            </div>
+
+
+            {/* SHIPPING */}
+
+            {display?.shipping && (
+
+              <div className="mt-6 text-sm text-[#7A6A4D] space-y-1">
+
+                <p className="font-medium text-[#3E2723]">
+                  {display.shipping.full_name}
+                </p>
+
+                <p>{display.shipping.line1}</p>
+                <p>{display.shipping.line2}</p>
+
+                <p>
+                  {display.shipping.city}, {display.shipping.emirate}
+                </p>
+
+                <p>{display.shipping.phone}</p>
+
+              </div>
+
+            )}
+
+            <Link
+              to="/shop"
+              className="mt-8 block w-full text-center bg-[#D4AF37] text-white py-3.5 rounded-xl font-semibold tracking-wide hover:bg-[#c49d2f] transition shadow-sm"
+            >
+              Continue Shopping
+            </Link>
+
+          </div>
+
+        </div>
+
+      </div>
     </main>
-  );
-}
-
-function InfoCard({ label, value, wide = false }) {
-  return (
-    <div className={`rounded-xl border border-[#EFE4CC] bg-[#FFFDF7] p-4 ${wide ? 'md:col-span-2' : ''}`}>
-      <p className="text-xs uppercase tracking-wide text-[#7A6A4D]">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-[#3E2723] break-words">{value}</p>
-    </div>
   );
 }

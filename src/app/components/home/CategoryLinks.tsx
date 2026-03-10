@@ -25,6 +25,13 @@ const categories = [
     productCount: 28,
     image: 'https://i.postimg.cc/vmj72mym/JG-face.jpg',
   },
+    {
+    id: 43,
+    name: 'Nails',
+    icon: Sparkles,
+    productCount: 28,
+    image: 'https://i.postimg.cc/YSVNDS7Q/JG_Nail.jpg',
+  },
   {
     id: 7,
     name: 'Brushes',

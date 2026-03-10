@@ -16,7 +16,7 @@ export function Newsletter() {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-br from-[#F5E6D3] to-[#FAF3E0] relative overflow-hidden">
+    <section className="py-10 bg-gradient-to-br from-[#F5E6D3] to-[#FAF3E0] relative overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#B76E79]/10 rounded-full blur-3xl" />

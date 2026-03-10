@@ -161,6 +161,7 @@ export type CartResponse = {
     type?: string | null;
     value?: number | null;
     discount_amount?: number | null;
+    max_discount_amount?: number | null;
   } | null;
   free_shipping_remaining?: number;
   is_free_shipping?: boolean;
@@ -208,11 +209,15 @@ const buildAddToCartRequestBody = (payload: AddToCartPayload): AddToCartRequestB
 
 const buildAuthHeaders = (token?: string | null) => (token ? authHeader(token) : {});
 
-export async function getCart(token?: string | null, signal?: AbortSignal): Promise<CartResponse> {
-  return fetchJson<CartResponse>("/cart", {
-    method: "GET",
+export async function getCart(
+  token?: string | null,
+  signal?: AbortSignal
+): Promise<CartResponse> {
+  // Backend auto-loads saved coupon per user/guest, no need to send coupon_code
+  return fetchJson<CartResponse>('/cart', {
+    method: 'GET',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...buildAuthHeaders(token),
     },
     signal,
@@ -281,6 +286,37 @@ export async function removeFromCart(
   return fetchJson<CartResponse>(`/cart/${productVariantId}`, {
     method: "DELETE",
     headers: {
+      ...buildAuthHeaders(token),
+    },
+    signal,
+  });
+}
+
+export async function applyCoupon(
+  token: string | null,
+  code: string,
+  signal?: AbortSignal
+): Promise<CartResponse> {
+  const normalized = code.trim();
+  return fetchJson<CartResponse>('/cart/apply-coupon', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAuthHeaders(token),
+    },
+    body: JSON.stringify({ coupon_code: normalized }),
+    signal,
+  });
+}
+
+export async function removeCoupon(
+  token: string | null,
+  signal?: AbortSignal
+): Promise<CartResponse> {
+  return fetchJson<CartResponse>('/cart/remove-coupon', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
       ...buildAuthHeaders(token),
     },
     signal,

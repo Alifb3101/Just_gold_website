@@ -1,250 +1,217 @@
-import React from 'react';
-import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin, CreditCard, Apple } from 'lucide-react';
-import { useApp } from '@/app/contexts/AppContext';
+import React from "react";
+import {
+  Instagram,
+  Facebook,
+  Twitter,
+  Youtube,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  Apple
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Footer() {
-  const { language, setLanguage, currency, setCurrency } = useApp();
-
   const shopLinks = [
-    'New Arrivals',
-    'Best Sellers',
-    'Face',
-    'Eyes',
-    'Lips',
-    'Brushes',
-    'Makeup Kits',
-    'Giftsets'
-  ];
-
-  const aboutLinks = [
-    'Our Story',
-    'Sustainability',
-    'Careers',
-    'Press',
-    'Store Locator',
-    'Blog'
+    { label: "New Arrivals", to: "/shop?category=2" },
+    { label: "Best Sellers", to: "/shop?category=3" },
+    { label: "Face", to: "/shop?category=4" },
+    { label: "Eyes", to: "/shop?category=5" },
+    { label: "Lips", to: "/shop?category=6" },
   ];
 
   const supportLinks = [
-    'Contact Us',
-    'Shipping & Returns',
-    'Track Order',
-    'FAQs',
-    'Size Guide',
-    'Terms & Conditions',
-    'Privacy Policy'
+    { label: "Contact Us", to: "/contact" },
+    { label: "Shipping & Returns", to: "/shipping-returns" },
+    { label: "Track Order", to: "/track-order" },
+    { label: "FAQs", to: "/faqs" },
+  ];
+
+  const socialLinks = [
+    { Icon: Instagram, href: "https://www.instagram.com/justgoldcosmetics/", label: "Instagram" },
+    { Icon: Facebook, href: "https://www.facebook.com", label: "Facebook" },
+    { Icon: Twitter, href: "https://www.twitter.com", label: "Twitter" },
+    { Icon: Youtube, href: "https://www.youtube.com", label: "YouTube" },
   ];
 
   return (
-    <footer className="bg-[#3E2723] text-white">
-      {/* Main Footer */}
-      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Shop Column */}
-          <div>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#D4AF37] mb-6">
-              Shop
-            </h3>
-            <ul className="space-y-3">
-              {shopLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href="#"
-                    className="text-[#FAF3E0] hover:text-[#D4AF37] transition-colors inline-block hover:translate-x-1 transform duration-200"
-                  >
-                    {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <footer className="text-[#2B2B2B] relative bg-gradient-to-b from-[#FFF7EB] via-[#FFFDF8] to-[#FFF7EB]">
 
-          {/* About Column */}
-          <div>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#D4AF37] mb-6">
-              About
-            </h3>
-            <ul className="space-y-3">
-              {aboutLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href="#"
-                    className="text-[#FAF3E0] hover:text-[#D4AF37] transition-colors inline-block hover:translate-x-1 transform duration-200"
-                  >
-                    {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* GOLD TOP LINE */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent"></div>
 
-          {/* Support Column */}
-          <div>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#D4AF37] mb-6">
-              Support
-            </h3>
-            <ul className="space-y-3">
-              {supportLinks.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href="#"
-                    className="text-[#FAF3E0] hover:text-[#D4AF37] transition-colors inline-block hover:translate-x-1 transform duration-200"
-                  >
-                    {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* MAIN FOOTER */}
+      <div className="max-w-[1600px] mx-auto px-8 py-20">
 
-          {/* Follow Us Column */}
-          <div>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#D4AF37] mb-6">
-              Follow Us
-            </h3>
-            
-            {/* Social Media Icons */}
-            <div className="flex gap-4 mb-8">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#D4AF37]/20 hover:bg-[#D4AF37] flex items-center justify-center text-[#D4AF37] hover:text-white transition-all duration-300"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#D4AF37]/20 hover:bg-[#D4AF37] flex items-center justify-center text-[#D4AF37] hover:text-white transition-all duration-300"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#D4AF37]/20 hover:bg-[#D4AF37] flex items-center justify-center text-[#D4AF37] hover:text-white transition-all duration-300"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#D4AF37]/20 hover:bg-[#D4AF37] flex items-center justify-center text-[#D4AF37] hover:text-white transition-all duration-300"
-              >
-                <Youtube className="w-5 h-5" />
-              </a>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
 
-            {/* Contact Info */}
-            <div className="space-y-3 text-[#FAF3E0]">
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-0.5" />
-                <a href="mailto:hello@justgold.ae" className="hover:text-[#D4AF37] transition-colors">
-                  hello@justgold.ae
-                </a>
-              </div>
-              <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-0.5" />
-                <a href="tel:+971501234567" className="hover:text-[#D4AF37] transition-colors">
-                  +971 50 123 4567
-                </a>
-              </div>
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-0.5" />
-                <span>Dubai, United Arab Emirates</span>
-              </div>
-            </div>
+          {/* LOGO + DESCRIPTION */}
+          <div className="space-y-6">
 
-            {/* Language & Currency - Mobile */}
-            <div className="mt-6 lg:hidden space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[#FAF3E0]">Language</span>
-                <button
-                  onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-                  className="text-sm text-[#D4AF37] font-medium"
+            {/* LOGO (UNCHANGED) */}
+            <div
+              aria-label="Just Gold logo"
+              className="h-12 w-32"
+              style={{
+                background:
+                  "linear-gradient(125deg, rgb(165 129 46) 0%, rgb(217, 181, 74) 28%, rgb(153 146 133) 55%, rgb(91 66 21) 75%, rgb(100 84 29) 100%), radial-gradient(120% 120% at 20% 15%, rgb(189 173 173 / 35%), #e7e0e000 55%)",
+                maskImage:
+                  "url('https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png')",
+                WebkitMaskImage:
+                  "url('https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png')",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+                maskSize: "contain",
+                WebkitMaskSize: "contain",
+                filter: "drop-shadow(0 10px 25px rgba(212,175,55,0.25))",
+              }}
+            />
+
+            <p className="text-sm text-[#6B6B6B] leading-relaxed">
+              Luxury beauty products crafted with elegance and quality.
+              Discover premium cosmetics designed for modern beauty.
+            </p>
+
+            {/* SOCIAL */}
+            <div className="flex gap-4">
+
+              {socialLinks.map(({ Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  className="w-10 h-10 bg-white/70 backdrop-blur rounded-full flex items-center justify-center hover:bg-[#D4AF37] hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
                 >
-                  {language === 'en' ? 'English' : 'العربية'}
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-[#FAF3E0]">Currency</span>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as any)}
-                  className="text-sm text-[#D4AF37] font-medium bg-transparent border border-[#D4AF37]/30 rounded px-2 py-1"
-                >
-                  <option value="AED" className="bg-[#3E2723]">AED</option>
-                  <option value="USD" className="bg-[#3E2723]">USD</option>
-                  <option value="INR" className="bg-[#3E2723]">INR</option>
-                  <option value="KWD" className="bg-[#3E2723]">KWD</option>
-                </select>
-              </div>
+                  <Icon size={18} />
+                </a>
+              ))}
+
             </div>
+
           </div>
+
+          {/* SHOP */}
+          <div>
+
+            <h3 className="text-sm tracking-[0.25em] font-semibold mb-6 text-[#3a3a3a]">
+              SHOP
+            </h3>
+
+            <ul className="space-y-3 text-sm text-[#6B6B6B]">
+
+              {shopLinks.map((item) => (
+                <li key={item.label} className="group cursor-pointer relative w-fit">
+                  <Link to={item.to} className="group-hover:text-[#D4AF37] transition">
+                    {item.label}
+                  </Link>
+
+                  <span className="absolute left-0 -bottom-1 h-[1px] w-0 bg-[#D4AF37] transition-all duration-300 group-hover:w-full"></span>
+                </li>
+              ))}
+
+            </ul>
+
+          </div>
+
+          {/* SUPPORT */}
+          <div>
+
+            <h3 className="text-sm tracking-[0.25em] font-semibold mb-6 text-[#3a3a3a]">
+              SUPPORT
+            </h3>
+
+            <ul className="space-y-3 text-sm text-[#6B6B6B]">
+
+              {supportLinks.map((item) => (
+                <li key={item.label} className="group cursor-pointer relative w-fit">
+                  <Link to={item.to} className="group-hover:text-[#D4AF37] transition">
+                    {item.label}
+                  </Link>
+
+                  <span className="absolute left-0 -bottom-1 h-[1px] w-0 bg-[#D4AF37] transition-all duration-300 group-hover:w-full"></span>
+                </li>
+              ))}
+
+            </ul>
+
+          </div>
+
+          {/* CONTACT */}
+          <div>
+
+            <h3 className="text-sm tracking-[0.25em] font-semibold mb-6 text-[#3a3a3a]">
+              CONTACT
+            </h3>
+
+            <div className="space-y-4 text-sm text-[#6B6B6B]">
+
+              <a
+                href="mailto:hello@justgold.ae"
+                className="flex gap-3 items-center hover:text-[#D4AF37] transition"
+              >
+                <Mail size={16} className="text-[#D4AF37]" />
+                hello@justgold.ae
+              </a>
+
+              <a
+                href="tel:+971501234567"
+                className="flex gap-3 items-center hover:text-[#D4AF37] transition"
+              >
+                <Phone size={16} className="text-[#D4AF37]" />
+                +971 50 123 4567
+              </a>
+
+              <a
+                href="https://maps.google.com/?q=Dubai%20UAE"
+                target="_blank"
+                rel="noreferrer"
+                className="flex gap-3 items-center hover:text-[#D4AF37] transition"
+              >
+                <MapPin size={16} className="text-[#D4AF37]" />
+                Dubai, UAE
+              </a>
+
+            </div>
+
+          </div>
+
         </div>
+
       </div>
 
-      {/* Payment Methods & Bottom Bar */}
-      <div className="border-t border-[#D4AF37]/20">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center justify-center">
-              <div
-                aria-label="Just Gold logo"
-                className="h-10 w-28"
-                style={{
-                  background:
-                    "linear-gradient(125deg, #c89a2e 0%, #d9b54a 28%, #f3e3c5 55%, #fff6e6 75%, #d4af37 100%), radial-gradient(120% 120% at 20% 15%, rgba(255,255,255,0.35), transparent 55%)",
-                  maskImage:
-                    "url('https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png')",
-                  WebkitMaskImage:
-                    "url('https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png')",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskPosition: "center",
-                  maskSize: "contain",
-                  WebkitMaskSize: "contain",
-                  filter:
-                    "drop-shadow(0 6px 18px rgba(212, 175, 55, 0.28)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))",
-                }}
-              />
-            </div>
+      {/* BOTTOM BAR */}
+      <div className="border-t border-[#F0E3D1]">
 
-            {/* Payment Icons */}
-            <div className="flex items-center gap-4 flex-wrap justify-center">
-              <span className="text-sm text-[#FAF3E0]">We Accept:</span>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-7 bg-white rounded flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-[#3E2723]" />
-                </div>
-                <div className="w-10 h-7 bg-white rounded flex items-center justify-center">
-                  <Apple className="w-6 h-6 text-[#3E2723]" />
-                </div>
-                <div className="px-3 py-1 bg-white rounded text-[#3E2723] text-xs font-semibold">
-                  Tabby
-                </div>
-                <div className="px-3 py-1 bg-white rounded text-[#3E2723] text-xs font-semibold">
-                  Tamara
-                </div>
-                <div className="px-3 py-1 bg-white rounded text-[#3E2723] text-xs font-semibold">
-                  COD
-                </div>
-              </div>
-            </div>
+        <div className="max-w-[1600px] mx-auto px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-6">
 
-            {/* Copyright */}
-            <div className="text-sm text-[#FAF3E0]">
-              © 2026 Just Gold. All rights reserved.
-            </div>
+          <p className="text-sm text-[#6B6B6B]">
+            © 2026 Just Gold. All rights reserved.
+          </p>
+
+          <div className="flex items-center gap-3">
+
+            <CreditCard size={20} className="text-[#444]" />
+            <Apple size={20} className="text-[#444]" />
+
+            <span className="px-3 py-1 bg-[#2B2B2B] text-white text-xs rounded">
+              Tabby
+            </span>
+
+            <span className="px-3 py-1 bg-[#2B2B2B] text-white text-xs rounded">
+              Tamara
+            </span>
+
           </div>
+
         </div>
+
       </div>
+
     </footer>
   );
 }

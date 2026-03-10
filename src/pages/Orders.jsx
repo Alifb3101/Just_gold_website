@@ -13,7 +13,7 @@ const API_BASE_URL = (() => {
     url.port = "5000";
     return url.toString().replace(/\/$/, "");
   } catch {
-    return "http://localhost:5000";
+    return "https://just-gold-backend-render.onrender.com";
   }
 })();
 

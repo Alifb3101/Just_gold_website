@@ -254,10 +254,14 @@ export const useCartStore = create((set, get) => ({
   fetchCart: async () => {
     set({ isLoading: true, error: null });
     try {
+      // Backend auto-loads saved coupon per user/guest, no need to send coupon_code
       const response = await api.get('/cart');
       const normalized = normalizeCart(response.data);
+      const responseCoupon = response?.data?.coupon?.code ?? '';
+      const checkout = get().checkout ?? {};
       set({
         ...normalized,
+        checkout: { ...checkout, couponCode: responseCoupon || '' },
         isLoading: false,
         error: null,
         lastFetchedAt: Date.now(),
@@ -304,8 +308,43 @@ export const useCartStore = create((set, get) => ({
     }));
   },
 
+  applyCoupon: async (code) => {
+    const normalized = String(code ?? '').trim();
+    if (!normalized) return false;
+    try {
+      const response = await api.post('/cart/apply-coupon', { coupon_code: normalized });
+      const normalized_cart = normalizeCart(response.data);
+      const responseCoupon = response?.data?.coupon?.code ?? '';
+      const checkout = get().checkout ?? {};
+      set({
+        ...normalized_cart,
+        checkout: { ...checkout, couponCode: responseCoupon || '' },
+      });
+      return true;
+    } catch (error) {
+      console.error('[cart] applyCoupon failed', error);
+      return false;
+    }
+  },
+
+  removeCoupon: async () => {
+    try {
+      const response = await api.post('/cart/remove-coupon');
+      const normalized_cart = normalizeCart(response.data);
+      const checkout = get().checkout ?? {};
+      set({
+        ...normalized_cart,
+        checkout: { ...checkout, couponCode: '' },
+      });
+      return true;
+    } catch (error) {
+      console.error('[cart] removeCoupon failed', error);
+      return false;
+    }
+  },
+
   clearCartLocal: () => {
-    set({
+    set((state) => ({
       items: [],
       subtotal: 0,
       shipping: 0,
@@ -315,7 +354,8 @@ export const useCartStore = create((set, get) => ({
       freeShippingRemaining: null,
       isFreeShipping: false,
       itemCount: 0,
-    });
+      checkout: { ...state.checkout, couponCode: '' },
+    }));
   },
 
   removeItemOptimistic: async (itemId) => {

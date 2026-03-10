@@ -5,7 +5,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/app/components/ui/sheet';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import { ProductGrid } from '@/app/components/shop/ProductGrid';
-import type { ProductCursorPage, ProductFilters } from '@/app/features/products/product-cursor-list.model';
+import type { ProductCursorPage, ProductFilters, ProductSort } from '@/app/features/products/product-cursor-list.model';
 import { getProducts } from '@/services/productService';
 
 const PAGE_SIZE = 12;
@@ -23,6 +23,8 @@ const DEFAULT_FILTERS: ProductFilters = {
   size: null,
   sort: 'newest',
 };
+
+const VALID_SORTS: ProductSort[] = ['newest', 'popular', 'price_low', 'price_high'];
 
 function serializeFilters(filters: ProductFilters) {
   return {
@@ -50,17 +52,25 @@ export function ProductPage() {
     const params = new URLSearchParams(location.search);
     const category = params.get('category');
     const search = params.get('search');
+    const sortParam = params.get('sort');
+    const sort = VALID_SORTS.includes((sortParam ?? '') as ProductSort) ? (sortParam as ProductSort) : 'newest';
     return {
       category: category?.trim() || null,
       search: search?.trim() || null,
+      sort,
     };
   }, [location.search]);
 
   useEffect(() => {
     setFilters((prev) => {
-      if (prev.category === urlFilters.category && prev.search === urlFilters.search) return prev;
+      if (
+        prev.category === urlFilters.category &&
+        prev.search === urlFilters.search &&
+        prev.sort === urlFilters.sort
+      )
+        return prev;
       preserveScrollRef.current = window.scrollY;
-      return { ...prev, category: urlFilters.category, search: urlFilters.search };
+      return { ...prev, category: urlFilters.category, search: urlFilters.search, sort: urlFilters.sort };
     });
   }, [urlFilters]);
 

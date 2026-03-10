@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Trash2, Heart, ShoppingBag, Lock, RotateCcw, Headphones, X } from 'lucide-react';
+import { ChevronRight, Trash2, Heart, ShoppingBag, Lock, RotateCcw, Headphones } from 'lucide-react';
 import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
 import { useApp } from '@/app/contexts/AppContext';
@@ -30,11 +30,11 @@ export function CartPage() {
     freeShippingRemaining,
     applyPromoCode,
     promoCode,
+    isApplyingCoupon,
   } = useCart();
   const { addToWishlist } = useWishlist();
   const { convertPrice } = useApp();
   const [promoInput, setPromoInput] = useState('');
-  const [showPromoInput, setShowPromoInput] = useState(false);
 
   const handleMoveToWishlist = (item: any) => {
     const variantId = item.variantModelNo && item.variantModelNo !== 'NULL'
@@ -287,40 +287,45 @@ export function CartPage() {
 
               {/* Promo Code Section */}
               <div className="mb-6">
-                {!showPromoInput ? (
-                  <button
-                    onClick={() => setShowPromoInput(true)}
-                    className="text-[#D4AF37] text-sm hover:underline font-medium"
-                  >
-                    Have a promo code?
-                  </button>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter promo code"
-                        value={promoInput}
-                        onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                        className="border-[#D4AF37] flex-1"
-                      />
-                      <button
-                        onClick={handleApplyPromo}
-                        className="px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#C4A037] transition-colors font-semibold"
-                      >
-                        Apply
-                      </button>
+                <p className="text-sm font-medium text-[#3E2723] mb-2">Promo Code</p>
+                
+                {/* Applied Promo Badge */}
+                {promoCode && (
+                  <div className="mb-3 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-5 h-5 bg-green-500 text-white rounded-full text-xs">✓</span>
+                      <span className="text-sm font-semibold text-green-700">{promoCode}</span>
+                      {discountAmount > 0 && (
+                        <span className="text-xs text-green-600">(-{convertPrice(discountAmount)})</span>
+                      )}
                     </div>
-                    {promoCode && (
-                      <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded px-3 py-2">
-                        <span className="text-sm text-green-700 font-medium">{promoCode} applied</span>
-                        <button onClick={() => applyPromoCode('')} className="text-green-700 hover:text-green-900">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                    <button
+                      onClick={() => void applyPromoCode('')}
+                      disabled={isApplyingCoupon}
+                      className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
+
+                {/* Input */}
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter code"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                    className="flex-1 border-gray-300 uppercase text-sm"
+                  />
+                  <button
+                    onClick={handleApplyPromo}
+                    disabled={!promoInput.trim() || isApplyingCoupon}
+                    className="px-4 py-2 bg-[#3E2723] text-white rounded-lg text-sm font-medium hover:bg-[#5D4037] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                  </button>
+                </div>
               </div>
 
               {/* CTA Buttons */}

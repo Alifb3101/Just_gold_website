@@ -13,14 +13,14 @@ const resolveApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL as string | undefined;
   if (envUrl && envUrl.trim().length > 0) return envUrl;
   if (import.meta.env.DEV) return '/api/v1';
-  return 'http://localhost:5000/api/v1';
+  return 'https://just-gold-backend-render.onrender.com/api/v1';
 };
 
 const resolveAssetBaseUrl = () => {
   const envUrl = import.meta.env.VITE_ASSET_URL as string | undefined;
   if (envUrl && envUrl.trim().length > 0) return envUrl;
   if (import.meta.env.DEV) return '';
-  return 'http://localhost:5000';
+  return 'https://just-gold-backend-render.onrender.com';
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();

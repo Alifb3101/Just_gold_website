@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { addToCart as apiAddToCart, getCart as apiGetCart, removeFromCart as apiRemoveFromCart, updateQuantity as apiUpdateQuantity } from '@/services/cartService';
+import {
+  addToCart as apiAddToCart,
+  getCart as apiGetCart,
+  removeFromCart as apiRemoveFromCart,
+  updateQuantity as apiUpdateQuantity,
+  applyCoupon as apiApplyCoupon,
+  removeCoupon as apiRemoveCoupon,
+} from '@/services/cartService';
 import type { CartResponse, CartItemApi } from '@/services/cartService';
 import { isVariantMismatchApiError } from '@/services/cartService';
 import { useAuth } from './AuthContext';
@@ -47,6 +54,7 @@ interface CartContextType {
   removeFromCart: (variantId: string) => Promise<void>;
   updateQuantity: (variantId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  clearCartLocal: () => void;
   cartCount: number;
   subtotal: number;
   shipping: number;
@@ -55,11 +63,21 @@ interface CartContextType {
   currency: string;
   freeShippingRemaining: number | null;
   isFreeShipping: boolean;
-  applyPromoCode: (code: string) => boolean;
+  applyPromoCode: (code: string) => Promise<boolean>;
   promoCode: string | null;
+  coupon: AppliedCoupon | null;
+  isApplyingCoupon: boolean;
   isLoading: boolean;
   refresh: () => Promise<void>;
 }
+
+type AppliedCoupon = {
+  code: string | null;
+  type?: string | null;
+  value?: number | null;
+  discount_amount?: number | null;
+  max_discount_amount?: number | null;
+};
 
 type CartTotals = {
   subtotal: number;
@@ -134,7 +152,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     isFreeShipping: false,
   });
   const [promoCode, setPromoCode] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   const syncFromResponse = useCallback((data?: Partial<CartResponse> | null) => {
     if (!data || !Array.isArray(data.items)) {
@@ -161,6 +181,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       isFreeShipping: Boolean(data.is_free_shipping ?? nextTotals.is_free_shipping ?? shippingAmount === 0),
     });
     setPromoCode(data.coupon?.code ?? null);
+    setCoupon(
+      data.coupon
+        ? {
+            code: data.coupon.code ?? null,
+            type: data.coupon.type ?? null,
+            value: data.coupon.value ?? null,
+            discount_amount: data.coupon.discount_amount ?? null,
+            max_discount_amount: data.coupon.max_discount_amount ?? null,
+          }
+        : null
+    );
     return true;
   }, []);
 
@@ -181,6 +212,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Backend auto-loads saved coupon, no need to send coupon_code on every fetch
       const data = await apiGetCart(token);
       syncFromResponse(data);
     } catch (err) {
@@ -190,9 +222,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, syncFromResponse, handleApiError]);
 
+  // Only refresh on mount and token change, not on every promoCode change
   useEffect(() => {
     refresh();
-  }, [refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const addToCart = useCallback(async (
     productId: string,
@@ -237,19 +271,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       handleApiError(err, 'Add to cart');
     }
-  }, [token, syncFromResponse, handleApiError]);
-
-  const updateQuantity = useCallback(async (variantId: string, quantity: number) => {
-    try {
-      const data = await apiUpdateQuantity(token, variantId, quantity);
-      const updated = syncFromResponse(data);
-      if (!updated) {
-        await refresh();
-      }
-    } catch (err) {
-      handleApiError(err, 'Update quantity');
-    }
-  }, [token, syncFromResponse, handleApiError]);
+  }, [token, syncFromResponse, handleApiError, refresh]);
 
   const removeFromCart = useCallback(async (variantId: string) => {
     try {
@@ -262,7 +284,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       handleApiError(err, 'Remove from cart');
     }
-  }, [token, syncFromResponse, handleApiError]);
+  }, [token, syncFromResponse, handleApiError, refresh]);
 
   const clearCart = useCallback(async () => {
     const variants = items.map((item) => item.id);
@@ -281,20 +303,66 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, items, syncFromResponse, handleApiError, refresh]);
 
-  const applyPromoCode = (code: string): boolean => {
-    const normalized = code.trim();
-    if (!normalized) {
-      setPromoCode(null);
-      toast.info('Promo codes cleared. Cart totals will use backend values.');
-      void refresh();
-      return true;
-    }
+  const clearCartLocal = useCallback(() => {
+    setItems([]);
+    setTotals({
+      subtotal: 0,
+      items: 0,
+      discount: 0,
+      shipping: 0,
+      total: 0,
+      currency: 'AED',
+      freeShippingRemaining: null,
+      isFreeShipping: false,
+    });
+    setPromoCode(null);
+    setCoupon(null);
+  }, []);
 
-    setPromoCode(normalized);
-    toast.info('Promo codes are validated on the server. Totals will refresh if the code is applied.');
-    void refresh();
-    return true;
-  };
+  const applyPromoCode = useCallback(
+    async (code: string): Promise<boolean> => {
+      const normalized = code.trim();
+      setIsApplyingCoupon(true);
+      try {
+        if (!normalized) {
+          const data = await apiRemoveCoupon(token);
+          const updated = syncFromResponse(data);
+          if (!updated) {
+            await refresh();
+          }
+          toast.success('Coupon removed');
+          return true;
+        }
+
+        const data = await apiApplyCoupon(token, normalized);
+        const updated = syncFromResponse(data);
+        if (!updated) {
+          await refresh();
+        }
+        toast.success('Coupon applied');
+        return true;
+      } catch (err) {
+        handleApiError(err, 'Apply coupon');
+        return false;
+      } finally {
+        setIsApplyingCoupon(false);
+      }
+    },
+    [token, syncFromResponse, handleApiError, refresh]
+  );
+
+  const updateQuantity = useCallback(async (variantId: string, quantity: number) => {
+    try {
+      const data = await apiUpdateQuantity(token, variantId, quantity);
+      const updated = syncFromResponse(data);
+      if (!updated) {
+        await refresh();
+      }
+      // Backend auto-persists coupon, no need to re-apply
+    } catch (err) {
+      handleApiError(err, 'Update quantity');
+    }
+  }, [token, syncFromResponse, handleApiError, refresh]);
 
   const cartCount = useMemo(
     () => totals.items ?? items.reduce((sum, item) => sum + item.quantity, 0),
@@ -319,6 +387,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        clearCartLocal,
         cartCount,
         subtotal,
         shipping,
@@ -329,6 +398,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         isFreeShipping,
         applyPromoCode,
         promoCode,
+        coupon,
+        isApplyingCoupon,
         isLoading,
         refresh,
       }}

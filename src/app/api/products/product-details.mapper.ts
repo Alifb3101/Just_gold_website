@@ -39,10 +39,9 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
       tabs.push({ id, label, content });
     }
   };
-
-  pushTab('how-to-apply', 'HOW TO APPLY', api.how_to_apply);
-  pushTab('benefits', 'BENEFITS', api.benefits);
   pushTab('product_description', 'PRODUCT DESCRIPTION', api.product_description);
+  pushTab('benefits', 'BENEFITS', api.benefits);
+  pushTab('how-to-apply', 'HOW TO APPLY', api.how_to_apply);
   pushTab('ingredients', 'INGREDIENTS', api.ingredients);
 
   const shades = (api.variants ?? []).map((variant) => {

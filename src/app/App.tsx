@@ -16,6 +16,10 @@ import { CategoryProvider } from '@/store/categoryStore';
 import { LoginPage } from '@/app/pages/LoginPage';
 import { RegisterPage } from '@/app/pages/RegisterPage';
 import { AccountPage } from '@/app/pages/AccountPage';
+import { ContactPage } from '@/app/pages/ContactPage';
+import { ShippingReturnsPage } from '@/app/pages/ShippingReturnsPage';
+import { TrackOrderPage } from '@/app/pages/TrackOrderPage';
+import { FAQPage } from '@/app/pages/FAQPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 import { ProtectedRoute } from '@/app/components/auth/ProtectedRoute';
@@ -81,6 +85,10 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route path="/contact" element={<ContactPage />} />
+                      <Route path="/shipping-returns" element={<ShippingReturnsPage />} />
+                      <Route path="/track-order" element={<TrackOrderPage />} />
+                      <Route path="/faqs" element={<FAQPage />} />
                       <Route path="/checkout" element={<CheckoutPage />} />
                        <Route
                          path="/orders"
