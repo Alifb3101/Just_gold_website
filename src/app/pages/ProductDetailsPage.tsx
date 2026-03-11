@@ -8,6 +8,8 @@ import type { Product, ProductImage, ProductShade } from '@/app/features/product
 import { useCart } from '@/app/contexts/CartContext';
 import { useCategories } from '@/store/categoryStore';
 import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/cartService';
+import { SEOHead, ProductSchema, BreadcrumbSchema } from '@/app/components/seo';
+import { SEO_CONFIG, stripHtml, truncateDescription } from '@/app/utils/seo';
 
 const PANEL_ORDER: Array<'hex' | 'gradient' | 'image'> = ['hex', 'gradient', 'image'];
 const PANEL_LABELS: Record<'hex' | 'gradient' | 'image', string> = {
@@ -248,6 +250,52 @@ export function ProductDetailsPage() {
     return null;
   }, [product?.categoryId, categories]);
 
+  // SEO Data - must be defined before early returns to avoid hook order issues
+  const productSeoData = useMemo(() => {
+    if (!product) return null;
+    const productUrl = `${SEO_CONFIG.siteUrl}/product/${product.id}-${product.slug}`;
+    const productImage = gallery[0]?.url || '';
+    return {
+      name: product.name,
+      description: stripHtml(product.description || product.subtitle),
+      image: productImage,
+      price: effectivePrice,
+      currency: product.currency || 'USD',
+      sku: product.productModelNo || product.id,
+      brand: SEO_CONFIG.brand,
+      availability: (isOutOfStock ? 'OutOfStock' : 'InStock') as 'InStock' | 'OutOfStock',
+      url: productUrl,
+      category: categoryPath?.sub?.name || categoryPath?.parent?.name,
+      rating: product.totalReviews > 0 ? {
+        value: product.averageRating,
+        count: product.totalReviews,
+      } : undefined,
+    };
+  }, [product, gallery, effectivePrice, isOutOfStock, categoryPath]);
+
+  const breadcrumbItems = useMemo(() => {
+    const items = [{ name: 'Home', url: SEO_CONFIG.siteUrl }];
+    if (categoryPath?.parent) {
+      items.push({
+        name: categoryPath.parent.name,
+        url: `${SEO_CONFIG.siteUrl}/shop?category=${categoryPath.parent.id}`,
+      });
+    }
+    if (categoryPath?.sub) {
+      items.push({
+        name: categoryPath.sub.name,
+        url: `${SEO_CONFIG.siteUrl}/shop?category=${categoryPath.sub.id}`,
+      });
+    }
+    if (product) {
+      items.push({
+        name: product.name,
+        url: `${SEO_CONFIG.siteUrl}/product/${product.id}-${product.slug}`,
+      });
+    }
+    return items;
+  }, [product, categoryPath]);
+
   const handleQuantityChange = (action: 'increase' | 'decrease') => {
     if (action === 'increase') {
       setQuantity((prev) => (maxStock ? Math.min(prev + 1, maxStock) : prev + 1));
@@ -431,6 +479,25 @@ export function ProductDetailsPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* SEO Meta Tags */}
+      <SEOHead
+        title={product.name}
+        description={truncateDescription(stripHtml(product.description || product.subtitle))}
+        path={`/product/${product.id}-${product.slug}`}
+        image={gallery[0]?.url}
+        imageAlt={product.name}
+        type="product"
+        keywords={[
+          product.name,
+          categoryPath?.parent?.name || 'cosmetics',
+          categoryPath?.sub?.name || '',
+          'luxury beauty',
+          'premium cosmetics',
+        ].filter(Boolean)}
+      />
+      {productSeoData && <ProductSchema product={productSeoData} />}
+      <BreadcrumbSchema items={breadcrumbItems} />
+
       {/* Breadcrumb - Desktop Only */}
       <nav className="hidden md:block bg-[#FFF9F0] border-b border-gray-200" aria-label="Breadcrumb">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-3">

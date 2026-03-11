@@ -7,6 +7,9 @@ import { Skeleton } from '@/app/components/ui/skeleton';
 import { ProductGrid } from '@/app/components/shop/ProductGrid';
 import type { ProductCursorPage, ProductFilters, ProductSort } from '@/app/features/products/product-cursor-list.model';
 import { getProducts } from '@/services/productService';
+import { SEOHead, CategorySchema, BreadcrumbSchema } from '@/app/components/seo';
+import { SEO_CONFIG } from '@/app/utils/seo';
+import { useCategories } from '@/store/categoryStore';
 
 const PAGE_SIZE = 12;
 
@@ -44,6 +47,7 @@ export function ProductPage() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const preserveScrollRef = useRef<number | null>(null);
+  const { categories } = useCategories();
 
   const stableFilters = useMemo(() => serializeFilters(filters), [filters]);
   const queryKey = useMemo(() => ['products', 'cursor-list', stableFilters] as const, [stableFilters]);
@@ -134,8 +138,81 @@ export function ProductPage() {
     setFilters(next);
   }, []);
 
+  // SEO data generation
+  const currentCategory = useMemo(() => {
+    if (!filters.category) return null;
+    const categoryId = parseInt(filters.category, 10);
+    for (const cat of categories) {
+      if (cat.id === categoryId) return { parent: cat, sub: null };
+      const sub = cat.subcategories?.find((s) => s.id === categoryId);
+      if (sub) return { parent: cat, sub };
+    }
+    return null;
+  }, [filters.category, categories]);
+
+  const seoTitle = useMemo(() => {
+    if (filters.search) return `Search: ${filters.search}`;
+    if (currentCategory?.sub) return `${currentCategory.sub.name} - ${currentCategory.parent.name}`;
+    if (currentCategory?.parent) return currentCategory.parent.name;
+    return 'Shop All Products';
+  }, [filters.search, currentCategory]);
+
+  const seoDescription = useMemo(() => {
+    if (filters.search) {
+      return `Search results for "${filters.search}" - Find premium luxury cosmetics and beauty products.`;
+    }
+    if (currentCategory?.sub) {
+      return `Shop ${currentCategory.sub.name} from our ${currentCategory.parent.name} collection. Premium luxury cosmetics and beauty products with free shipping.`;
+    }
+    if (currentCategory?.parent) {
+      return `Explore our ${currentCategory.parent.name} collection. Premium luxury cosmetics, skincare, and beauty essentials.`;
+    }
+    return 'Browse our complete collection of luxury cosmetics, skincare, and premium beauty products. Free shipping on all orders.';
+  }, [filters.search, currentCategory]);
+
+  const breadcrumbItems = useMemo(() => {
+    const items = [{ name: 'Home', url: SEO_CONFIG.siteUrl }];
+    items.push({ name: 'Shop', url: `${SEO_CONFIG.siteUrl}/shop` });
+    if (currentCategory?.parent) {
+      items.push({
+        name: currentCategory.parent.name,
+        url: `${SEO_CONFIG.siteUrl}/shop?category=${currentCategory.parent.id}`,
+      });
+    }
+    if (currentCategory?.sub) {
+      items.push({
+        name: currentCategory.sub.name,
+        url: `${SEO_CONFIG.siteUrl}/shop?category=${currentCategory.sub.id}`,
+      });
+    }
+    return items;
+  }, [currentCategory]);
+
   return (
     <div className="min-h-screen bg-[#FFF9F0]">
+      {/* SEO Meta Tags */}
+      <SEOHead
+        title={seoTitle}
+        description={seoDescription}
+        path={`/shop${location.search}`}
+        noIndex={!!filters.search}
+        keywords={[
+          'luxury cosmetics',
+          'premium beauty',
+          currentCategory?.parent?.name || '',
+          currentCategory?.sub?.name || '',
+          'skincare',
+          'makeup',
+        ].filter(Boolean)}
+      />
+      {currentCategory && (
+        <CategorySchema
+          name={currentCategory.sub?.name || currentCategory.parent.name}
+          description={seoDescription}
+          url={`${SEO_CONFIG.siteUrl}/shop?category=${currentCategory.sub?.id || currentCategory.parent.id}`}
+        />
+      )}
+      <BreadcrumbSchema items={breadcrumbItems} />
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block flex-shrink-0 w-[280px]">

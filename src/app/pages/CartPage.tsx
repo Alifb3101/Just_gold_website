@@ -8,6 +8,7 @@ import { preloadCheckoutPage } from '@/pages/prefetch';
 import { QuantitySelector } from '@/app/components/ui/quantity-selector';
 import { Input } from '@/app/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/app/components/ui/alert-dialog';
+import { SEOHead } from '@/app/components/seo';
 
 const toProductSlugSegment = (name: string): string =>
   name
@@ -72,6 +73,14 @@ export function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF9F0]">
+      {/* SEO */}
+      <SEOHead
+        title="Shopping Cart"
+        description="Review your shopping cart and proceed to checkout. Luxury cosmetics with free shipping on orders over $50."
+        path="/cart"
+        noIndex={true}
+      />
+      
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">

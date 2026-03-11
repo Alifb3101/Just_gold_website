@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const proxyTarget = env.VITE_PROXY_TARGET || 'https://just-gold-backend-render.onrender.com/'
+  const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:5000/'
 
   return {
   plugins: [
@@ -26,6 +26,32 @@ export default defineConfig(({ mode }) => {
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  
+  // Build optimizations
+  build: {
+    // Code splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunk for React ecosystem
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // UI components chunk
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
+          // Query/state management chunk
+          'vendor-state': ['@tanstack/react-query', 'zustand'],
+          // Animation chunk
+          'vendor-animation': ['framer-motion'],
+        },
+      },
+    },
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
+    // Use esbuild for minification (faster, built-in)
+    minify: 'esbuild',
+    // Generate source maps for debugging (disabled in production)
+    sourcemap: mode !== 'production',
+  },
+  
   server: {
     host: true,
     proxy: {

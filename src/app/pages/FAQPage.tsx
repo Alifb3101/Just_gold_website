@@ -1,5 +1,6 @@
 import React from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/app/components/ui/accordion";
+import { SEOHead } from '@/app/components/seo';
 
 const FAQS = [
   {
@@ -27,6 +28,14 @@ const FAQS = [
 export function FAQPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FFF9F0] via-white to-[#FFF9F0]">
+      {/* SEO */}
+      <SEOHead
+        title="Frequently Asked Questions"
+        description="Find answers to common questions about orders, delivery, returns, and products. Get help with luxury cosmetics shopping."
+        path="/faqs"
+        keywords={['FAQ', 'help', 'questions', 'orders', 'delivery', 'returns']}
+      />
+      
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 space-y-8">
         <div className="space-y-3 text-center">
           <p className="text-xs tracking-[0.3em] text-[#B08A2E]">FREQUENT QUESTIONS</p>

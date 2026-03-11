@@ -1,5 +1,6 @@
 import React from "react";
 import { Truck, RotateCcw, ShieldCheck, Clock, CheckCircle } from "lucide-react";
+import { SEOHead } from '@/app/components/seo';
 
 export function ShippingReturnsPage() {
   const highlights = [
@@ -17,6 +18,14 @@ export function ShippingReturnsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FFF9F0] via-white to-[#FFF9F0]">
+      {/* SEO */}
+      <SEOHead
+        title="Shipping & Returns"
+        description="Learn about our shipping options, delivery times, and hassle-free return policy. Express shipping available with insured parcels."
+        path="/shipping-returns"
+        keywords={['shipping', 'delivery', 'returns', 'refund policy', 'express delivery']}
+      />
+      
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 space-y-10">
         <div className="space-y-3 text-center">
           <p className="text-xs tracking-[0.3em] text-[#B08A2E]">DELIVERY & CARE</p>

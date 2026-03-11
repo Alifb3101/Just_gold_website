@@ -4,9 +4,10 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && npm run sitemap:generate",
     "dev": "vite",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sitemap:generate": "node scripts/build-sitemap.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -56,6 +57,7 @@
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
+    "react-helmet-async": "^3.0.0",
     "react-hook-form": "7.55.0",
     "react-popper": "2.3.0",
     "react-resizable-panels": "2.1.7",

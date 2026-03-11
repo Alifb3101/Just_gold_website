@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Mail, Phone, MapPin, Clock, MessageSquare } from "lucide-react";
+import { SEOHead } from '@/app/components/seo';
 
 export function ContactPage() {
   const [formState, setFormState] = useState({ name: "", email: "", message: "" });
@@ -17,6 +18,14 @@ export function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FFF9F0] via-white to-[#FFF9F0]">
+      {/* SEO */}
+      <SEOHead
+        title="Contact Us"
+        description="Get in touch with our customer service team. We're here to help with orders, products, and any questions about luxury cosmetics."
+        path="/contact"
+        keywords={['contact', 'customer service', 'support', 'luxury cosmetics']}
+      />
+      
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 space-y-10">
         <div className="space-y-4 text-center">
           <p className="text-xs tracking-[0.3em] text-[#B08A2E]">WE'RE HERE TO HELP</p>

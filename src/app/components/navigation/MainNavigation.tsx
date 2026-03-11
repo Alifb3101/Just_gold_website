@@ -424,7 +424,7 @@ export function MainNavigation() {
                   </div>
 
                   {/* Desktop Store Logo (Right after search bar) */}
-                  <button
+                  {/* <button
                     type="button"
                     className="
                       flex items-center justify-center
@@ -442,7 +442,11 @@ export function MainNavigation() {
                     aria-label="Open store locator"
                   >
                     <MapPin className="w-8 h-8 text-[#3E2723]" />
-                  </button>
+                  </button> 
+                  
+                  */}
+
+
                 </div>
               </div>
 
@@ -462,7 +466,7 @@ export function MainNavigation() {
                       w-[78px] h-[38px]
                       sm:w-[110px] sm:h-[52px]
                       md:w-[100px] md:h-[45px]
-                      lg:w-[160px] lg:h-[70px]
+                      lg:w-[120px] lg:h-[60px]
                       xl:w-[160px] xl:h-[90px]
                       drop-shadow-[0_0_20px_rgba(212,175,55,0.35)]
                       group-hover:scale-[1.05]
@@ -623,9 +627,9 @@ export function MainNavigation() {
         {/* ✅ Main Menu Bar (Desktop mega categories) */}
         <nav className="bg-white/90 backdrop-blur border-b border-[#D4AF37]/15 shadow-[0_10px_30px_rgba(0,0,0,0.08)] hidden lg:block">
           <div className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-10">
-            <div className="md:h-[65px] lg:h-[70px] xl:h-[85px] h-[85px] flex items-center justify-center">
+            <div className="md:h-[65px] lg:h-[60px] xl:h-[85px] h-[85px] flex items-center justify-center">
               {/* Desktop Menu Items */}
-              <div className="hidden lg:flex items-center gap-6 md:gap-7 lg:gap-8 xl:gap-12">
+              <div className="hidden lg:flex items-center gap-6 md:gap-7 lg:gap-5 xl:gap-12">
                 {status === 'loading' && menuItems.length === 0 ? (
                   <div className="flex gap-4">
                     {Array.from({ length: 5 }).map((_, idx) => (
