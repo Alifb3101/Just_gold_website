@@ -214,14 +214,28 @@ export async function getCart(
   signal?: AbortSignal
 ): Promise<CartResponse> {
   // Backend auto-loads saved coupon per user/guest, no need to send coupon_code
-  return fetchJson<CartResponse>('/cart', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(token),
-    },
-    signal,
-  });
+  try {
+    const response = await fetchJson<CartResponse>('/cart', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(token),
+      },
+      signal,
+    });
+    
+    console.debug('[cart][frontend] getCart.response', {
+      hasItems: Array.isArray(response?.items),
+      itemCount: response?.items?.length ?? 0,
+      hasTotals: !!response?.totals,
+      response: response,
+    });
+    
+    return response;
+  } catch (error) {
+    console.error('[cart][frontend] getCart.error', { error });
+    throw error;
+  }
 }
 
 export async function addToCart(

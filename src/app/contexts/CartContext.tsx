@@ -157,8 +157,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   const syncFromResponse = useCallback((data?: Partial<CartResponse> | null) => {
+    console.debug('[cart] syncFromResponse.input', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      hasItems: Array.isArray(data?.items),
+      itemCount: data?.items?.length ?? 0,
+      data: data,
+    });
+    
     if (!data || !Array.isArray(data.items)) {
       // If the API did not return the cart payload, signal the caller to refetch.
+      console.warn('[cart] syncFromResponse: no items array in response');
       return false;
     }
 
@@ -214,8 +223,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       // Backend auto-loads saved coupon, no need to send coupon_code on every fetch
       const data = await apiGetCart(token);
-      syncFromResponse(data);
+      console.debug('[cart] refresh.before_sync', {
+        dataType: typeof data,
+        isArray: Array.isArray(data),
+        keys: typeof data === 'object' && data ? Object.keys(data) : [],
+      });
+      const success = syncFromResponse(data);
+      if (!success) {
+        console.warn('[cart] refresh: syncFromResponse returned false, retrying...');
+        // This shouldn't happen if backend is working correctly
+        // But as a fallback, we already set items to []
+      } else {
+        console.debug('[cart] refresh: sync successful');
+      }
     } catch (err) {
+      console.error('[cart] refresh.error', { error: err });
       handleApiError(err, 'Fetch cart');
     } finally {
       setIsLoading(false);
@@ -252,8 +274,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         ...(productVariantId ? { productVariantId: Number(productVariantId) } : {}),
         ...(safeQuantity ? { quantity: safeQuantity } : {}),
       });
+      console.debug('[cart] addToCart.response', {
+        dataType: typeof data,
+        isArray: Array.isArray(data),
+        keys: typeof data === 'object' && data ? Object.keys(data) : [],
+        hasItems: Array.isArray(data?.items),
+        itemCount: data?.items?.length ?? 0,
+      });
       const updated = syncFromResponse(data);
       if (!updated) {
+        console.warn('[cart] addToCart: syncFromResponse returned false, calling refresh...');
         await refresh();
       }
       if (meta?.name) {
@@ -269,6 +299,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         return;
       }
+      console.error('[cart] addToCart.error', { error: err });
       handleApiError(err, 'Add to cart');
     }
   }, [token, syncFromResponse, handleApiError, refresh]);
