@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { login as apiLogin, register as apiRegister, type LoginResponse, type RegisterResponse } from "@/services/authService";
 import { fetchCurrentUser, type CurrentUser } from "@/services/userService";
-import { clearGuestId } from "@/services/guestService";
+import { initializeGuestToken, clearGuestToken, getGuestToken } from "@/services/guestTokenService";
 import { ApiError } from "@/app/api/http";
 import { useCartStore } from "@/store/cartStore";
 
@@ -12,6 +12,7 @@ const NAME_KEY = "auth_name";
 
 type AuthContextValue = {
   token: string | null;
+  guestToken: string | null;
   user: CurrentUser | null;
   isAuthenticated: boolean;
   isAuthReady: boolean;
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
+  const [guestToken, setGuestToken] = useState<string | null>(null);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
@@ -57,8 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     persistBasics({ token: null, email: null, phone: null, name: null });
-    // Continue to use same guest ID after logout
-    // (don't call clearGuestId() here so guest can continue shopping)
   }, [persistBasics]);
 
   const refreshCartAfterAuth = useCallback(() => {
@@ -73,6 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hydrateFromStorage = useCallback(async () => {
+    // Always initialize guest token (even if user is authenticated)
+    const initialGuestToken = initializeGuestToken();
+    setGuestToken(initialGuestToken);
+    
     const storedToken = localStorage.getItem(STORAGE_KEY);
     const storedEmail = localStorage.getItem(EMAIL_KEY);
     const storedPhone = localStorage.getItem(PHONE_KEY);
@@ -116,8 +120,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (emailInput: string, password: string) => {
     const res = await apiLogin(emailInput, password);
     persistBasics({ token: res.token, email: emailInput });
-    // Clear guest ID when user logs in
-    clearGuestId();
+    // Clear guest token when user logs in (switch to auth-based cart)
+    clearGuestToken();
+    setGuestToken(null);
     await refreshUser(res.token).catch(() => {});
     refreshCartAfterAuth();
     return res;
@@ -126,8 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (nameInput: string, emailInput: string, password: string, phoneInput?: string) => {
     const res = await apiRegister(nameInput, emailInput, password, phoneInput);
     persistBasics({ email: emailInput, name: nameInput, phone: phoneInput });
-    // Clear guest ID when user registers (they will log in next)
-    clearGuestId();
+    // Clear guest token when user registers (they will log in and use auth cart)
+    clearGuestToken();
+    setGuestToken(null);
     return res;
   };
 
@@ -136,8 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ token, user, email, phone, name, isAuthenticated: Boolean(token), isAuthReady, login, register, logout, refreshUser }),
-    [token, user, email, phone, name, isAuthReady, login, register, logout, refreshUser]
+    () => ({ token, guestToken, user, email, phone, name, isAuthenticated: Boolean(token), isAuthReady, login, register, logout, refreshUser }),
+    [token, guestToken, user, email, phone, name, isAuthReady, login, register, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

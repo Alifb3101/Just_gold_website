@@ -139,7 +139,7 @@ const mapCartItem = (item: CartItemApi): CartItem => {
 };
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { token, logout } = useAuth();
+  const { token, guestToken, logout } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [totals, setTotals] = useState<CartTotals>({
     subtotal: 0,
@@ -222,27 +222,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       // Backend auto-loads saved coupon, no need to send coupon_code on every fetch
-      const data = await apiGetCart(token);
+      const data = await apiGetCart(token, undefined, guestToken);
       console.debug('[cart] refresh.before_sync', {
         dataType: typeof data,
         isArray: Array.isArray(data),
         keys: typeof data === 'object' && data ? Object.keys(data) : [],
+        isAuthenticated: !!token,
+        hasGuestToken: !!guestToken,
       });
       const success = syncFromResponse(data);
       if (!success) {
         console.warn('[cart] refresh: syncFromResponse returned false, retrying...');
-        // This shouldn't happen if backend is working correctly
-        // But as a fallback, we already set items to []
       } else {
         console.debug('[cart] refresh: sync successful');
       }
     } catch (err) {
-      console.error('[cart] refresh.error', { error: err });
+      console.error('[cart] refresh.error', { isAuthenticated: !!token, hasGuestToken: !!guestToken, error: err });
       handleApiError(err, 'Fetch cart');
     } finally {
       setIsLoading(false);
     }
-  }, [token, syncFromResponse, handleApiError]);
+  }, [token, guestToken, syncFromResponse, handleApiError]);
 
   // Only refresh on mount and token change, not on every promoCode change
   useEffect(() => {
@@ -267,19 +267,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       productVariantId,
       quantity: safeQuantity,
       meta,
+      isAuthenticated: !!token,
+      hasGuestToken: !!guestToken,
     });
     try {
       const data = await apiAddToCart(token, {
         productId: Number(productId),
         ...(productVariantId ? { productVariantId: Number(productVariantId) } : {}),
         ...(safeQuantity ? { quantity: safeQuantity } : {}),
-      });
+      }, undefined, guestToken);
       console.debug('[cart] addToCart.response', {
         dataType: typeof data,
         isArray: Array.isArray(data),
         keys: typeof data === 'object' && data ? Object.keys(data) : [],
         hasItems: Array.isArray(data?.items),
         itemCount: data?.items?.length ?? 0,
+        isAuthenticated: !!token,
+        hasGuestToken: !!guestToken,
       });
       const updated = syncFromResponse(data);
       if (!updated) {
@@ -299,14 +303,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
         return;
       }
-      console.error('[cart] addToCart.error', { error: err });
+      console.error('[cart] addToCart.error', { isAuthenticated: !!token, hasGuestToken: !!guestToken, error: err });
       handleApiError(err, 'Add to cart');
     }
-  }, [token, syncFromResponse, handleApiError, refresh]);
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
 
   const removeFromCart = useCallback(async (variantId: string) => {
     try {
-      const data = await apiRemoveFromCart(token, variantId);
+      const data = await apiRemoveFromCart(token, variantId, undefined, guestToken);
       const updated = syncFromResponse(data);
       if (!updated) {
         await refresh();
@@ -315,13 +319,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       handleApiError(err, 'Remove from cart');
     }
-  }, [token, syncFromResponse, handleApiError, refresh]);
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
 
   const clearCart = useCallback(async () => {
     const variants = items.map((item) => item.id);
     for (const id of variants) {
       try {
-        const data = await apiRemoveFromCart(token, id);
+        const data = await apiRemoveFromCart(token, id, undefined, guestToken);
         const updated = syncFromResponse(data);
         if (!updated) {
           await refresh();
@@ -332,7 +336,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         break;
       }
     }
-  }, [token, items, syncFromResponse, handleApiError, refresh]);
+  }, [token, guestToken, items, syncFromResponse, handleApiError, refresh]);
 
   const clearCartLocal = useCallback(() => {
     setItems([]);
@@ -356,7 +360,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setIsApplyingCoupon(true);
       try {
         if (!normalized) {
-          const data = await apiRemoveCoupon(token);
+          const data = await apiRemoveCoupon(token, undefined, guestToken);
           const updated = syncFromResponse(data);
           if (!updated) {
             await refresh();
@@ -365,7 +369,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           return true;
         }
 
-        const data = await apiApplyCoupon(token, normalized);
+        const data = await apiApplyCoupon(token, normalized, undefined, guestToken);
         const updated = syncFromResponse(data);
         if (!updated) {
           await refresh();
@@ -379,12 +383,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setIsApplyingCoupon(false);
       }
     },
-    [token, syncFromResponse, handleApiError, refresh]
+    [token, guestToken, syncFromResponse, handleApiError, refresh]
   );
 
   const updateQuantity = useCallback(async (variantId: string, quantity: number) => {
     try {
-      const data = await apiUpdateQuantity(token, variantId, quantity);
+      const data = await apiUpdateQuantity(token, variantId, quantity, undefined, guestToken);
       const updated = syncFromResponse(data);
       if (!updated) {
         await refresh();
@@ -393,7 +397,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       handleApiError(err, 'Update quantity');
     }
-  }, [token, syncFromResponse, handleApiError, refresh]);
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
 
   const cartCount = useMemo(
     () => totals.items ?? items.reduce((sum, item) => sum + item.quantity, 0),

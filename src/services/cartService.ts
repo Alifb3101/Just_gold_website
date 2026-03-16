@@ -1,6 +1,5 @@
 import { fetchJson } from "@/app/api/http";
 import { authHeader } from "@/services/authService";
-import { getGuestIdHeader } from "@/services/guestService";
 
 export type CartPayloadValidationErrorCode =
   | 'NO_PRODUCT'
@@ -208,23 +207,37 @@ const buildAddToCartRequestBody = (payload: AddToCartPayload): AddToCartRequestB
   };
 };
 
-const buildAuthHeaders = (token?: string | null) => ({
-  ...authHeader(token),
-  ...getGuestIdHeader(token),
-});
+const buildAuthHeaders = (token?: string | null) => (token ? authHeader(token) : {});
+
+const buildCartHeaders = (token?: string | null, guestToken?: string | null) => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Send auth token if authenticated
+  if (token) {
+    const authHeaders = authHeader(token);
+    Object.assign(headers, authHeaders);
+  }
+  // Send guest token for non-authenticated users
+  else if (guestToken) {
+    headers['X-Guest-Token'] = guestToken;
+    console.debug('[cart] Using guest token in request', { guestToken: guestToken.substring(0, 20) + '...' });
+  }
+
+  return headers;
+};
 
 export async function getCart(
   token?: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  guestToken?: string | null
 ): Promise<CartResponse> {
   // Backend auto-loads saved coupon per user/guest, no need to send coupon_code
   try {
     const response = await fetchJson<CartResponse>('/cart', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...buildAuthHeaders(token),
-      },
+      headers: buildCartHeaders(token, guestToken),
       signal,
     });
     
@@ -233,12 +246,13 @@ export async function getCart(
       itemCount: response?.items?.length ?? 0,
       hasTotals: !!response?.totals,
       isAuthenticated: !!token,
+      hasGuestToken: !!guestToken,
       response: response,
     });
     
     return response;
   } catch (error) {
-    console.error('[cart][frontend] getCart.error', { isAuthenticated: !!token, error });
+    console.error('[cart][frontend] getCart.error', { isAuthenticated: !!token, hasGuestToken: !!guestToken, error });
     throw error;
   }
 }
@@ -246,17 +260,15 @@ export async function getCart(
 export async function addToCart(
   token: string | null,
   payload: AddToCartPayload,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  guestToken?: string | null
 ): Promise<CartResponse> {
   const requestBody = buildAddToCartRequestBody(payload);
 
   try {
     const response = await fetchJson<CartResponse>("/cart", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...buildAuthHeaders(token),
-      },
+      headers: buildCartHeaders(token, guestToken),
       body: JSON.stringify(requestBody),
       signal,
     });
@@ -265,6 +277,8 @@ export async function addToCart(
     console.debug('[cart][frontend] add.response', {
       ok: true,
       status: 200,
+      isAuthenticated: !!token,
+      hasGuestToken: !!guestToken,
       item: firstItem
         ? {
             productId: firstItem.product_id,
@@ -275,7 +289,7 @@ export async function addToCart(
     });
     return response;
   } catch (error) {
-    console.error('[cart][frontend] add.error', { payload: requestBody, error });
+    console.error('[cart][frontend] add.error', { payload: requestBody, isAuthenticated: !!token, hasGuestToken: !!guestToken, error });
     throw error;
   }
 }
@@ -284,14 +298,12 @@ export async function updateQuantity(
   token: string | null,
   productVariantId: string,
   quantity: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  guestToken?: string | null
 ): Promise<CartResponse> {
   return fetchJson<CartResponse>(`/cart/${productVariantId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token),
-    },
+    headers: buildCartHeaders(token, guestToken),
     body: JSON.stringify({ quantity }),
     signal,
   });
@@ -300,13 +312,12 @@ export async function updateQuantity(
 export async function removeFromCart(
   token: string | null,
   productVariantId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  guestToken?: string | null
 ): Promise<CartResponse> {
   return fetchJson<CartResponse>(`/cart/${productVariantId}`, {
     method: "DELETE",
-    headers: {
-      ...buildAuthHeaders(token),
-    },
+    headers: buildCartHeaders(token, guestToken),
     signal,
   });
 }
@@ -314,15 +325,13 @@ export async function removeFromCart(
 export async function applyCoupon(
   token: string | null,
   code: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  guestToken?: string | null
 ): Promise<CartResponse> {
   const normalized = code.trim();
   return fetchJson<CartResponse>('/cart/apply-coupon', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(token),
-    },
+    headers: buildCartHeaders(token, guestToken),
     body: JSON.stringify({ coupon_code: normalized }),
     signal,
   });
@@ -330,14 +339,12 @@ export async function applyCoupon(
 
 export async function removeCoupon(
   token: string | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  guestToken?: string | null
 ): Promise<CartResponse> {
   return fetchJson<CartResponse>('/cart/remove-coupon', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(token),
-    },
+    headers: buildCartHeaders(token, guestToken),
     signal,
   });
 }
