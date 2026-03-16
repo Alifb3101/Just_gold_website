@@ -33,6 +33,12 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
 export const ASSET_BASE_URL: string = (() => {
   const envAssetUrl = import.meta.env.VITE_ASSET_URL as string | undefined;
   if (envAssetUrl && envAssetUrl.trim().length > 0) return envAssetUrl;
+  if (API_BASE_URL?.startsWith('/')) {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return window.location.origin;
+    }
+    return '';
+  }
   try {
     const url = new URL(API_BASE_URL!);
     return `${url.protocol}//${url.host}`;

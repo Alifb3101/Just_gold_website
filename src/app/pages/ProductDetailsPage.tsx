@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { fetchProductByIdSlug } from '@/app/api/products/product-details.api';
 import type { Product, ProductImage, ProductShade } from '@/app/features/products/product-details.model';
 import { useCart } from '@/app/contexts/CartContext';
+import { useWishlist } from '@/app/contexts/WishlistContext';
 import { useCategories } from '@/store/categoryStore';
 import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/cartService';
 import { SEOHead, ProductSchema, BreadcrumbSchema } from '@/app/components/seo';
@@ -77,6 +78,7 @@ export function ProductDetailsPage() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const [searchParams] = useSearchParams();
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { categories } = useCategories();
 
   // ============================================
@@ -213,6 +215,8 @@ export function ProductDetailsPage() {
     ? Math.max(0, Math.round((1 - (selectedShadeData.discountPrice / selectedShadeData.price)) * 100))
     : 0;
   const isOutOfStock = maxStock === 0;
+  const wishlistVariantId = selectedShadeData?.id || selectedShade || null;
+  const isWishlisted = product ? isInWishlist(String(product.id), wishlistVariantId) : false;
 
   const baseMedia: ProductImage[] = useMemo(() => {
     if (!product) return [];
@@ -328,7 +332,7 @@ export function ProductDetailsPage() {
 
       await addToCart(
         String(payload.product_id),
-        String(payload.product_variant_id),
+        payload.product_variant_id ? String(payload.product_variant_id) : undefined,
         payload.quantity,
         {
           name: product.name,
@@ -364,6 +368,29 @@ export function ProductDetailsPage() {
       toast.error('Add to cart failed.');
       console.error(err);
     }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!product) return;
+
+    const productId = String(product.id);
+    const variantId = wishlistVariantId || undefined;
+
+    if (isWishlisted) {
+      await removeFromWishlist(productId, variantId);
+      return;
+    }
+
+    const imageCandidate = selectedShadeData?.imageUrl
+      || selectedShadeData?.secondaryImageUrl
+      || variantMedia[0]?.url
+      || baseMedia[0]?.url
+      || '';
+
+    await addToWishlist(productId, variantId, {
+      name: product.name,
+      image: imageCandidate,
+    });
   };
 
   const handleShadeSelect = useCallback(
@@ -928,10 +955,12 @@ export function ProductDetailsPage() {
                   {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO BAG'}
                 </button>
                 <button
+                  onClick={handleWishlistToggle}
                   className="w-full sm:w-auto px-6 py-3 border-2 border-[#D4AF37] text-[#D4AF37] rounded-lg font-semibold hover:bg-[#D4AF37] hover:text-white transition-colors"
                   disabled={isOutOfStock}
+                  aria-pressed={isWishlisted}
                 >
-                  {isOutOfStock ? 'Notify Me' : 'Add to Wishlist'}
+                  {isOutOfStock ? 'Notify Me' : isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 </button>
               </div>
             </div>
