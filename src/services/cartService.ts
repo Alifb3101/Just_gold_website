@@ -1,5 +1,6 @@
 import { fetchJson } from "@/app/api/http";
 import { authHeader } from "@/services/authService";
+import { getGuestIdHeader } from "@/services/guestService";
 
 export type CartPayloadValidationErrorCode =
   | 'NO_PRODUCT'
@@ -207,7 +208,10 @@ const buildAddToCartRequestBody = (payload: AddToCartPayload): AddToCartRequestB
   };
 };
 
-const buildAuthHeaders = (token?: string | null) => (token ? authHeader(token) : {});
+const buildAuthHeaders = (token?: string | null) => ({
+  ...authHeader(token),
+  ...getGuestIdHeader(token),
+});
 
 export async function getCart(
   token?: string | null,
@@ -228,12 +232,13 @@ export async function getCart(
       hasItems: Array.isArray(response?.items),
       itemCount: response?.items?.length ?? 0,
       hasTotals: !!response?.totals,
+      isAuthenticated: !!token,
       response: response,
     });
     
     return response;
   } catch (error) {
-    console.error('[cart][frontend] getCart.error', { error });
+    console.error('[cart][frontend] getCart.error', { isAuthenticated: !!token, error });
     throw error;
   }
 }

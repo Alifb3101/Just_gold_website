@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { login as apiLogin, register as apiRegister, type LoginResponse, type RegisterResponse } from "@/services/authService";
 import { fetchCurrentUser, type CurrentUser } from "@/services/userService";
+import { clearGuestId } from "@/services/guestService";
 import { ApiError } from "@/app/api/http";
 import { useCartStore } from "@/store/cartStore";
 
@@ -56,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     persistBasics({ token: null, email: null, phone: null, name: null });
+    // Continue to use same guest ID after logout
+    // (don't call clearGuestId() here so guest can continue shopping)
   }, [persistBasics]);
 
   const refreshCartAfterAuth = useCallback(() => {
@@ -113,6 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (emailInput: string, password: string) => {
     const res = await apiLogin(emailInput, password);
     persistBasics({ token: res.token, email: emailInput });
+    // Clear guest ID when user logs in
+    clearGuestId();
     await refreshUser(res.token).catch(() => {});
     refreshCartAfterAuth();
     return res;
@@ -121,6 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (nameInput: string, emailInput: string, password: string, phoneInput?: string) => {
     const res = await apiRegister(nameInput, emailInput, password, phoneInput);
     persistBasics({ email: emailInput, name: nameInput, phone: phoneInput });
+    // Clear guest ID when user registers (they will log in next)
+    clearGuestId();
     return res;
   };
 
