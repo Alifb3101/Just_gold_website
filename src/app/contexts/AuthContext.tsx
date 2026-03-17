@@ -3,7 +3,6 @@ import { login as apiLogin, register as apiRegister, type LoginResponse, type Re
 import { fetchCurrentUser, type CurrentUser } from "@/services/userService";
 import { initializeGuestToken, clearGuestToken, getGuestToken } from "@/services/guestTokenService";
 import { ApiError } from "@/app/api/http";
-import { useCartStore } from "@/store/cartStore";
 
 const STORAGE_KEY = "auth_token";
 const EMAIL_KEY = "auth_email";
@@ -62,14 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [persistBasics]);
 
   const refreshCartAfterAuth = useCallback(() => {
-    try {
-      const store = useCartStore.getState();
-      if (store?.fetchCart) {
-        store.fetchCart();
-      }
-    } catch {
-      // no-op
-    }
+    // CartContext automatically refreshes cart when token changes
+    // via its useEffect hook, so this is no longer needed
+    // Kept as no-op to avoid breaking existing code flow
   }, []);
 
   const hydrateFromStorage = useCallback(async () => {
