@@ -11,6 +11,7 @@ import { useCategories } from '@/store/categoryStore';
 import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/cartService';
 import { SEOHead, ProductSchema, BreadcrumbSchema } from '@/app/components/seo';
 import { SEO_CONFIG, stripHtml, truncateDescription } from '@/app/utils/seo';
+import { ProductSuggestions } from '@/app/components/ProductSuggestions';
 
 const PANEL_ORDER: Array<'hex' | 'gradient' | 'image'> = ['hex', 'gradient', 'image'];
 const PANEL_LABELS: Record<'hex' | 'gradient' | 'image', string> = {
@@ -1274,6 +1275,12 @@ export function ProductDetailsPage() {
             </button>
           </div>
         </div>
+
+        {/* ============================================ */}
+        {/* 💎 PRODUCT SUGGESTIONS SECTION             */}
+        {/* ============================================ */}
+        
+        {product && <ProductSuggestions productId={product.id} />}
       </div>
     </div>
   );
