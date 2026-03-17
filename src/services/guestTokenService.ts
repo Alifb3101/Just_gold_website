@@ -7,16 +7,38 @@
 const GUEST_TOKEN_KEY = 'guest_token';
 
 /**
- * Generate a UUIDv4-like guest token
- * Format: guest_XXXXXXXXXXXXXXXX
+ * Generate a proper UUIDv4 guest token
+ * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ * Backend expects UUID format in the database
  */
 function generateGuestToken(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = 'guest_';
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  // Polyfill for crypto.getRandomValues if not available
+  const getRandomValues = (arr: Uint8Array) => {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      return crypto.getRandomValues(arr);
+    }
+    // Fallback for older browsers
+    for (let i = 0; i < arr.length; i++) {
+      arr[i] = Math.floor(Math.random() * 256);
+    }
+    return arr;
+  };
+
+  const bytes = new Uint8Array(16);
+  getRandomValues(bytes);
+
+  // Set version to 4 (random)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  // Set variant to RFC 4122
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  // Convert bytes to UUID string format
+  const hexString = Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  // Format as xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  return `${hexString.substring(0, 8)}-${hexString.substring(8, 12)}-${hexString.substring(12, 16)}-${hexString.substring(16, 20)}-${hexString.substring(20, 32)}`;
 }
 
 /**
@@ -29,14 +51,14 @@ export function initializeGuestToken(): string {
     // Check if token already exists
     const existingToken = localStorage.getItem(GUEST_TOKEN_KEY);
     if (existingToken && existingToken.trim()) {
-      console.debug('[guest-token] Found existing token:', existingToken.substring(0, 20) + '...');
+      console.debug('[guest-token] Found existing UUID token:', existingToken);
       return existingToken;
     }
 
-    // Generate new token
+    // Generate new UUID token
     const newToken = generateGuestToken();
     localStorage.setItem(GUEST_TOKEN_KEY, newToken);
-    console.debug('[guest-token] Generated new token:', newToken.substring(0, 20) + '...');
+    console.debug('[guest-token] Generated new UUID token:', newToken);
     return newToken;
   } catch (error) {
     console.error('[guest-token] localStorage error, generating temporary token:', error);
