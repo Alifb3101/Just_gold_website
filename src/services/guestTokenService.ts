@@ -42,8 +42,18 @@ function generateGuestToken(): string {
 }
 
 /**
+ * Check if token is in old format (guest_XXXXX)
+ * Old format: guest_loKOG1NUzS68k2YUGOGLfqwUyMCUHUTM
+ * New format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+ */
+function isOldTokenFormat(token: string): boolean {
+  return token && token.startsWith('guest_');
+}
+
+/**
  * Initialize guest token on app load
  * Returns existing token from localStorage or creates a new one
+ * Automatically migrates old format tokens to new UUID format
  * This should be called ONCE on app initialization
  */
 export function initializeGuestToken(): string {
@@ -51,6 +61,17 @@ export function initializeGuestToken(): string {
     // Check if token already exists
     const existingToken = localStorage.getItem(GUEST_TOKEN_KEY);
     if (existingToken && existingToken.trim()) {
+      // Migrate old format tokens to new UUID format
+      if (isOldTokenFormat(existingToken)) {
+        console.debug('[guest-token] Detected old token format, migrating to UUID...');
+        localStorage.removeItem(GUEST_TOKEN_KEY);
+        const newToken = generateGuestToken();
+        localStorage.setItem(GUEST_TOKEN_KEY, newToken);
+        console.debug('[guest-token] Migrated to new UUID token:', newToken);
+        return newToken;
+      }
+
+      // Valid existing token
       console.debug('[guest-token] Found existing UUID token:', existingToken);
       return existingToken;
     }
