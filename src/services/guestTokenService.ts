@@ -101,7 +101,6 @@ export function getGuestToken(): string | null {
     return null;
   }
 }
-
 /**
  * Clear guest token (only when user logs in or explicitly resets)
  */

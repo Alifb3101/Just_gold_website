@@ -8,7 +8,7 @@
 
 | Setting            | Value                                | Notes |
 |--------------------|--------------------------------------|-------|
-| API Base URL       | `http://localhost:5000/api/v1`       | Use environment variable in production. |
+| API Base URL       | `https://just-gold-backend-render.onrender.com/api/v1`       | Use environment variable in production. |
 | Auth Header        | `Authorization: Bearer <token>`      | Required for protected routes (e.g., orders). |
 | Content-Type (POST)| `multipart/form-data` (for uploads)  | JSON for non-file requests. |
 | Response Format    | JSON                                 | UTF-8 encoded. |
@@ -221,7 +221,7 @@ export function authHeaders(token: string) {
 
 ```typescript
 // Example TypeScript helper
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://just-gold-backend-render.onrender.com/api/v1";
 
 export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
