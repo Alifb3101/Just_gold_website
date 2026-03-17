@@ -196,9 +196,14 @@ export function ProductSuggestions({ productId }: ProductSuggestionsProps) {
         }
 
         setSuggestions(response.data?.data || null);
-      } catch (err) {
-        // Non-blocking error - suggestions are optional
-        console.error('[suggestions] fetch error:', err);
+      } catch (err: any) {
+        // Handle 404 gracefully - product may not have suggestions
+        if (err.response?.status === 404) {
+          console.debug('[suggestions] No suggestions available for product', productId);
+          setSuggestions(null);
+        } else {
+          console.error('[suggestions] fetch error:', err);
+        }
         setSuggestions(null);
       } finally {
         setLoading(false);
