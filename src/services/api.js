@@ -19,8 +19,8 @@ const authToken = () => {
 const guestToken = () => {
   try {
     const token = localStorage.getItem('guest_token');
-    // Only return if it's in proper UUID format (not old format like guest_XXXXX)
-    if (token && token.includes('-')) {
+    // Only return if it's a string and in proper UUID format (contains dashes, not old format like guest_XXXXX)
+    if (typeof token === 'string' && token.includes('-') && !token.startsWith('guest_')) {
       return token;
     }
     return null;

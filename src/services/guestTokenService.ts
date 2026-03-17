@@ -46,8 +46,8 @@ function generateGuestToken(): string {
  * Old format: guest_loKOG1NUzS68k2YUGOGLfqwUyMCUHUTM
  * New format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
  */
-function isOldTokenFormat(token: string): boolean {
-  return token && token.startsWith('guest_');
+function isOldTokenFormat(token: string | null): boolean {
+  return typeof token === 'string' && token.startsWith('guest_');
 }
 
 /**
