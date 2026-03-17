@@ -187,7 +187,7 @@ export function ProductSuggestions({ productId }: ProductSuggestionsProps) {
       try {
         setLoading(true);
 
-        const response = await api.get(`/products/${productId}/suggestions`);
+        const response = await api.get(`/v1/products/${productId}/suggestions`);
 
         if (response.data?.success === false) {
           console.warn('[suggestions] API returned success:false', response.data?.message);
@@ -218,9 +218,9 @@ export function ProductSuggestions({ productId }: ProductSuggestionsProps) {
     return <div ref={sectionRef} />;
   }
 
-  const hasSimilar = suggestions?.similarProducts?.length > 0;
-  const hasBoughtTogether = suggestions?.frequentlyBoughtTogether?.length > 0;
-  const hasTrending = suggestions?.trendingProducts?.length > 0;
+  const hasSimilar = (suggestions?.similarProducts?.length ?? 0) > 0;
+  const hasBoughtTogether = (suggestions?.frequentlyBoughtTogether?.length ?? 0) > 0;
+  const hasTrending = (suggestions?.trendingProducts?.length ?? 0) > 0;
 
   // Don't render container if no products at all
   if (!hasSimilar && !hasBoughtTogether && !hasTrending && !loading) {
