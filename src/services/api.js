@@ -16,6 +16,19 @@ const authToken = () => {
   }
 };
 
+const guestToken = () => {
+  try {
+    const token = localStorage.getItem('guest_token');
+    // Only return if it's in proper UUID format (not old format like guest_XXXXX)
+    if (token && token.includes('-')) {
+      return token;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT_MS,
@@ -28,10 +41,19 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = authToken();
+  const guest = guestToken();
+  
+  config.headers = config.headers ?? {};
+  
+  // Add auth token if user is authenticated
   if (token) {
-    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Otherwise, add guest token if available (for guest users)
+  else if (guest) {
+    config.headers['X-Guest-Token'] = guest;
+  }
+  
   return config;
 });
 
