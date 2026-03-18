@@ -293,7 +293,7 @@ export default function ProductSuggestions({ productId }: ProductSuggestionsProp
         abortControllerRef.current = new AbortController();
 
         const response = await api.get(
-          `/v1/products/${productId}/suggestions`,
+          `/products/${productId}/suggestions`,
           { signal: abortControllerRef.current.signal }
         );
 
