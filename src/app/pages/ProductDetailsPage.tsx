@@ -1153,21 +1153,17 @@ export function ProductDetailsPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="prose max-w-none min-h-[200px] relative">
-            {product.tabs.map((tab) => (
-              <div
-                key={tab.id}
-                className={`transition-all duration-300 ease-in-out ${
-                  activeTab === tab.id
-                    ? 'opacity-100 pointer-events-auto'
-                    : 'opacity-0 pointer-events-none'
-                }`}
-              >
-                <div className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {tab.content}
-                </div>
-              </div>
-            ))}
+          <div className="prose max-w-none">
+            {product.tabs.map(
+              (tab) =>
+                activeTab === tab.id && (
+                  <div key={tab.id} className="animate-fadeIn">
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {tab.content}
+                    </div>
+                  </div>
+                )
+            )}
           </div>
           </div>
         )}
