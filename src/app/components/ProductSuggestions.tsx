@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, AlertCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { ASSET_BASE_URL } from '@/app/api/http';
@@ -181,15 +181,9 @@ const SuggestionSection = ({
   sectionType: SectionType;
   Icon?: React.ReactNode;
 }) => {
-  const navigate = useNavigate();
-
   if (!products?.length && !loading) return null;
 
   const validProducts = (products || []).filter(p => p && p.id && p.name && p.slug);
-
-  const handleExploreClick = useCallback(() => {
-    navigate('/shop');
-  }, [navigate]);
 
   return (
     <section className="mb-16 md:mb-20">
@@ -229,7 +223,6 @@ const SuggestionSection = ({
           {/* Explore Button */}
           <div className="mt-8 md:mt-10 text-center">
             <button 
-              onClick={handleExploreClick}
               className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold text-white 
               bg-gradient-to-r from-[#D4AF37] to-[#C9A227] rounded-full shadow-lg 
               hover:shadow-[0_12px_32px_rgba(212,175,55,0.3)] 
