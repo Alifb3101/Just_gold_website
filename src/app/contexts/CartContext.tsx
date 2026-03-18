@@ -244,11 +244,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, guestToken, syncFromResponse, handleApiError]);
 
-  // Only refresh on mount and token change, not on every promoCode change
+  // Refresh on mount and when token or guestToken changes
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, guestToken]);
 
   const addToCart = useCallback(async (
     productId: string,
