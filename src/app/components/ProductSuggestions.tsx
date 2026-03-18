@@ -109,7 +109,7 @@ const ProductCard = React.memo(({
 
   return (
     <Link
-      to={`/products/${product.slug}`}
+      to={`/product/${product.slug}`}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       className="group relative flex flex-col h-full rounded-2xl overflow-hidden 
