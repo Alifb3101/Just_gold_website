@@ -12,6 +12,7 @@ import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/
 import { SEOHead, ProductSchema, BreadcrumbSchema } from '@/app/components/seo';
 import { SEO_CONFIG, stripHtml, truncateDescription } from '@/app/utils/seo';
 import ProductSuggestions from '../components/ProductSuggestions';
+import { Reviews } from '../components/Reviews';
 
 const PANEL_ORDER: Array<'hex' | 'gradient' | 'image'> = ['hex', 'gradient', 'image'];
 const PANEL_LABELS: Record<'hex' | 'gradient' | 'image', string> = {
@@ -1197,86 +1198,12 @@ export function ProductDetailsPage() {
           </div>
         )}
 
-
         {/* ⭐ REVIEWS SECTION                          */}
-       
-        
-        <div className="border-t border-gray-200 pt-6 md:pt-12">
-          {/* Reviews Header */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 md:mb-8">
-            <div>
-              <h2 className="product-title text-[#3E2723] mb-2">
-                Customer Reviews
-              </h2>
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.averageRating)
-                          ? 'fill-[#D4AF37] text-[#D4AF37]'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="review-meta font-semibold">{product.averageRating}</span>
-                <span className="review-meta text-gray-500">({product.totalReviews} reviews)</span>
-              </div>
-            </div>
-            <button className="w-full md:w-auto px-4 md:px-6 py-2.5 md:py-3 border-2 border-[#D4AF37] text-[#D4AF37] rounded-lg text-sm md:text-base font-bold hover:bg-[#D4AF37] hover:text-white transition-all">
-              Write a Review
-            </button>
+        {product && (
+          <div className="border-t border-gray-200 pt-6 md:pt-12">
+            <Reviews productId={product.id} />
           </div>
-
-          {/* Reviews List */}
-          <div className="space-y-4 md:space-y-6">
-            {product.reviews.length === 0 ? (
-              <p className="review-meta text-gray-500">No reviews yet.</p>
-            ) : (
-              product.reviews.map((review) => (
-                <div key={review.id} className="border-b border-gray-200 pb-4 md:pb-6">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2 md:mb-3 gap-2">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="review-meta font-semibold text-[#3E2723]">{review.name}</span>
-                        {review.verified && (
-                          <span className="text-[10px] md:text-xs bg-green-100 text-green-700 px-2 py-0.5 md:py-1 rounded">
-                            Verified Purchase
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3 h-3 md:w-4 md:h-4 ${
-                                i < review.rating
-                                  ? 'fill-[#D4AF37] text-[#D4AF37]'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="review-meta text-gray-500">{review.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="product-description text-gray-700">{review.comment}</p>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Load More Button */}
-          <div className="text-center mt-6 md:mt-8 pb-24 md:pb-0">
-            <button className="w-full md:w-auto px-6 md:px-8 py-2.5 md:py-3 border-2 border-gray-300 rounded-lg text-sm md:text-base font-semibold hover:border-[#D4AF37] transition-all">
-              Load More Reviews
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* ============================================ */}
         {/* 💎 PRODUCT SUGGESTIONS SECTION             */}
