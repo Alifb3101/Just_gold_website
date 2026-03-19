@@ -97,16 +97,20 @@ const ReviewCard: React.FC<{ review: Review; onHelpful: (reviewId: number, type:
 };
 
 const RatingDistribution = ({ stats }: { stats: ReviewsResponse['data']['stats'] }) => {
+  if (!stats?.rating_distribution || Object.keys(stats.rating_distribution).length === 0) {
+    return null;
+  }
+
   const maxCount = Math.max(
-    ...Object.values(stats.rating_distribution),
+    ...Object.values(stats.rating_distribution).filter((v) => typeof v === 'number'),
     1
   ) as number;
 
   return (
     <div className="space-y-2">
       {[5, 4, 3, 2, 1].map((rating) => {
-        const count = stats.rating_distribution[rating] || 0;
-        const percentage = (count / maxCount) * 100;
+        const count = (stats.rating_distribution?.[rating] as number) || 0;
+        const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
 
         return (
           <div key={rating} className="flex items-center gap-2">
@@ -131,7 +135,11 @@ const RatingDistribution = ({ stats }: { stats: ReviewsResponse['data']['stats']
 export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [stats, setStats] = useState<ReviewsResponse['data']['stats'] | null>(null);
+  const [stats, setStats] = useState<ReviewsResponse['data']['stats']>({
+    average_rating: 0,
+    total_reviews: 0,
+    rating_distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  });
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -145,10 +153,23 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
     try {
       const response = await reviewService.getProductReviews(productId, page, limit, sort);
       setReviews(response.data.reviews);
-      setStats(response.data.stats);
-      setTotal(response.data.total);
+      
+      // Ensure stats has default values
+      const stats = response.data.stats || {
+        average_rating: 0,
+        total_reviews: 0,
+        rating_distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      };
+      setStats(stats);
+      setTotal(response.data.total || 0);
     } catch (error) {
       console.error('Error fetching reviews:', error);
+      // Set fallback stats on error
+      setStats({
+        average_rating: 0,
+        total_reviews: 0,
+        rating_distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      });
     } finally {
       setLoading(false);
     }
@@ -195,24 +216,24 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId }) => {
       </div>
 
       {/* Stats */}
-      {stats && (
+      {stats && stats.total_reviews > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Average Rating */}
           <div className="flex items-start gap-4">
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-[#3E2723]">
-                  {stats.average_rating.toFixed(1)}
+                  {(stats.average_rating || 0).toFixed(1)}
                 </span>
                 <span className="text-gray-600">/5</span>
               </div>
-              <Stars rating={Math.round(stats.average_rating)} />
-              <p className="text-sm text-gray-600 mt-1">{stats.total_reviews} reviews</p>
+              <Stars rating={Math.round(stats.average_rating || 0)} />
+              <p className="text-sm text-gray-600 mt-1">{stats.total_reviews || 0} reviews</p>
             </div>
           </div>
 
           {/* Distribution */}
-          <RatingDistribution stats={stats} />
+          {stats.rating_distribution && <RatingDistribution stats={stats} />}
         </div>
       )}
 
