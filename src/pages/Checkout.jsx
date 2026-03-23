@@ -95,6 +95,7 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
   const [guestEmail, setGuestEmail] = useState(guestEmailValue || "");
   const [guestFullName, setGuestFullName] = useState(guestFullNameValue || "");
@@ -413,9 +414,10 @@ export default function Checkout() {
 
               {/* Add New Address Button or Form */}
               <div>
-                {savedAddresses.length > 0 && !selectedAddressId && (
+                {savedAddresses.length > 0 && !isAddingNewAddress && (
                   <button
                     onClick={() => {
+                      setIsAddingNewAddress(true);
                       setSelectedAddressId(null);
                       setAddress(INITIAL_ADDRESS);
                       setErrors({});
@@ -427,17 +429,33 @@ export default function Checkout() {
                   </button>
                 )}
                 
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="w-1 h-6 bg-gradient-to-b from-[#D4AF37] to-[#B8860B] rounded-full"></div>
-                  <p className="text-sm font-bold text-[#3E2723] uppercase tracking-widest">
-                    {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
-                  </p>
-                </div>
-                <AddressForm
-                  values={address}
-                  errors={errors}
-                  onChange={onAddressChange}
-                />
+                {(savedAddresses.length === 0 || isAddingNewAddress) && (
+                  <>
+                    <div className="flex items-center gap-2 mb-6">
+                      <div className="w-1 h-6 bg-gradient-to-b from-[#D4AF37] to-[#B8860B] rounded-full"></div>
+                      <p className="text-sm font-bold text-[#3E2723] uppercase tracking-widest">
+                        {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
+                      </p>
+                    </div>
+                    <AddressForm
+                      values={address}
+                      errors={errors}
+                      onChange={onAddressChange}
+                    />
+                    {isAddingNewAddress && (
+                      <button
+                        onClick={() => {
+                          setIsAddingNewAddress(false);
+                          setAddress(INITIAL_ADDRESS);
+                          setErrors({});
+                        }}
+                        className="mt-4 w-full py-2 px-4 rounded-lg border border-[#E5DCC5] text-[#7A6B50] hover:bg-[#F5F0E8] text-sm font-medium transition"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </LuxuryCard>
 
