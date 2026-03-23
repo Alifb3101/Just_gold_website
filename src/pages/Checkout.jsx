@@ -99,7 +99,6 @@ export default function Checkout() {
   const [guestEmail, setGuestEmail] = useState(guestEmailValue || "");
   const [guestFullName, setGuestFullName] = useState(guestFullNameValue || "");
   const [guestPhone, setGuestPhone] = useState(guestPhoneValue || "");
-  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
 
   const submitLockRef = useRef(false);
 
@@ -406,31 +405,20 @@ export default function Checkout() {
                       );
                     })}
                   </div>
-
-                  {/* Add New Address Button */}
-                  <button
-                    onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-                    className="w-full mt-4 py-3 px-4 rounded-xl border-2 border-dashed border-[#D4AF37]/50 text-[#D4AF37] font-semibold hover:border-[#D4AF37] hover:bg-[#FFF8EA]/50 transition-all duration-200 flex items-center justify-center gap-2"
-                  >
-                    <span className="text-xl">+</span>
-                    {showNewAddressForm ? "Cancel" : "Add New Address"}
-                  </button>
                 </div>
               )}
 
-              {/* Address Form - Only show if no saved addresses or button clicked */}
-              {(showNewAddressForm || savedAddresses.length === 0) && (
-                <div className={`${savedAddresses.length > 0 ? "pt-6" : ""}`}>
-                  <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">
-                    {savedAddresses.length > 0 ? "Delivery Address" : "Enter Delivery Address"}
-                  </p>
-                  <AddressForm
-                    values={address}
-                    errors={errors}
-                    onChange={onAddressChange}
-                  />
-                </div>
-              )}
+              {/* Address Form */}
+              <div>
+                <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">
+                  {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
+                </p>
+                <AddressForm
+                  values={address}
+                  errors={errors}
+                  onChange={onAddressChange}
+                />
+              </div>
             </LuxuryCard>
 
             {/* Payment Method Card */}
