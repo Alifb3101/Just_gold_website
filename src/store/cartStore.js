@@ -198,7 +198,7 @@ export const useCartStore = create((set, get) => ({
   error: null,
   lastFetchedAt: 0,
   checkout: {
-    paymentMethod: 'stripe',
+    paymentMethod: 'cod',
     shippingAddress: null,
     shippingAddressId: null,
     guestEmail: '',
