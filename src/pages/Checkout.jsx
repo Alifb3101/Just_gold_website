@@ -372,8 +372,11 @@ export default function Checkout() {
 
               {/* Saved Addresses */}
               {savedAddresses.length > 0 && (
-                <div className="mb-6 pb-6 border-b border-[#E5DCC5]">
-                  <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">Your Saved Addresses</p>
+                <div className="mb-8 pb-8 border-b border-[#E5DCC5]">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-1 h-6 bg-gradient-to-b from-[#D4AF37] to-[#B8860B] rounded-full"></div>
+                    <p className="text-sm font-bold text-[#3E2723] uppercase tracking-widest">Saved Delivery Addresses</p>
+                  </div>
                   <div className="space-y-3">
                     {savedAddresses.map((addr) => {
                       const active = Number(selectedAddressId) === Number(addr.id);
@@ -381,21 +384,21 @@ export default function Checkout() {
                         <button
                           key={addr.id}
                           onClick={() => onSelectSavedAddress(addr.id)}
-                          className={`w-full text-left p-4 rounded-xl border-2 transition duration-200 ${
+                          className={`w-full text-left p-5 rounded-xl border-2 transition duration-300 transform hover:scale-102 ${
                             active
-                              ? "border-[#D4AF37] bg-gradient-to-r from-[#FFF8EA] to-white shadow-md"
-                              : "border-[#E5DCC5] bg-white hover:border-[#D4AF37]/50"
+                              ? "border-[#D4AF37] bg-gradient-to-br from-[#FFF8EA] via-[#FFFBF0] to-white shadow-lg"
+                              : "border-[#E5DCC5] bg-white hover:border-[#D4AF37] hover:shadow-md"
                           }`}
                         >
-                          <div className="flex items-start gap-3">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                              active ? "border-[#D4AF37] bg-[#D4AF37]" : "border-[#D4AF37]/40"
+                          <div className="flex items-start gap-4">
+                            <div className={`w-6 h-6 rounded-full border-2.5 flex items-center justify-center flex-shrink-0 mt-0.5 transition ${
+                              active ? "border-[#D4AF37] bg-[#D4AF37]" : "border-[#D4AF37]/40 bg-transparent"
                             }`}>
-                              {active && <CheckCircle2 size={20} className="text-white -m-2.5" />}
+                              {active && <CheckCircle2 size={22} className="text-white" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-[#3E2723]">{addr.full_name}</p>
-                              <p className="text-sm text-[#7A6B50] mt-1">{addr.line1 || addr.address_line_1}</p>
+                              <p className="font-bold text-[#2C1F1B] text-lg">{addr.full_name}</p>
+                              <p className="text-sm text-[#7A6B50] mt-2">{addr.line1 || addr.address_line_1}</p>
                               {(addr.line2 || addr.address_line_2) && (
                                 <p className="text-xs text-[#999] mt-1">{addr.line2 || addr.address_line_2}</p>
                               )}
@@ -408,7 +411,7 @@ export default function Checkout() {
                 </div>
               )}
 
-              {/* Address Form */}
+              {/* Add New Address Button or Form */}
               <div>
                 {savedAddresses.length > 0 && !selectedAddressId && (
                   <button
@@ -417,15 +420,19 @@ export default function Checkout() {
                       setAddress(INITIAL_ADDRESS);
                       setErrors({});
                     }}
-                    className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-[#D4AF37] bg-white hover:bg-[#FFF9F0] text-[#D4AF37] font-semibold flex items-center justify-center gap-2 transition duration-200 mb-4"
+                    className="w-full py-4 px-6 rounded-xl border-2 border-dashed border-[#D4AF37] bg-gradient-to-br from-[#FFF9F0] to-white hover:from-[#FFF4E0] hover:to-[#FFFBF0] text-[#D4AF37] font-bold text-lg flex items-center justify-center gap-3 transition duration-300 hover:shadow-md mb-8"
                   >
-                    <span className="text-xl">+</span>
-                    Add New Address
+                    <span className="text-2xl font-light">+</span>
+                    Add New Delivery Address
                   </button>
                 )}
-                <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">
-                  {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
-                </p>
+                
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-1 h-6 bg-gradient-to-b from-[#D4AF37] to-[#B8860B] rounded-full"></div>
+                  <p className="text-sm font-bold text-[#3E2723] uppercase tracking-widest">
+                    {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
+                  </p>
+                </div>
                 <AddressForm
                   values={address}
                   errors={errors}
@@ -494,150 +501,153 @@ export default function Checkout() {
 
 function AddressForm({ values, errors, onChange }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div className="bg-gradient-to-br from-[#FFF9F0] to-white p-6 rounded-xl border border-[#E5DCC5]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-      <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
-          <span className="w-1 h-1 bg-[#D4AF37] rounded-full"></span>
-          Full Name
-        </label>
-        <input
-          type="text"
-          value={values.full_name}
-          onChange={(e) => onChange("full_name", e.target.value)}
-          className={`w-full rounded-xl px-4 py-3 border transition ${
-            errors.full_name
-              ? "border-red-400 focus:ring-red-400"
-              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
-          } focus:ring-2 bg-white focus:outline-none`}
-          placeholder="Your full name"
-        />
-        {errors.full_name && (
-          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-            <span>•</span> {errors.full_name}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
-          <Phone size={14} className="text-[#D4AF37]" />
-          Phone Number
-        </label>
-        <input
-          type="tel"
-          value={values.phone}
-          onChange={(e) => onChange("phone", e.target.value)}
-          className={`w-full rounded-xl px-4 py-3 border transition ${
-            errors.phone
-              ? "border-red-400 focus:ring-red-400"
-              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
-          } focus:ring-2 bg-white focus:outline-none`}
-          placeholder="+971 50 XXX XXXX"
-        />
-        {errors.phone && (
-          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-            <span>•</span> {errors.phone}
-          </p>
-        )}
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
-          <MapPin size={14} className="text-[#D4AF37]" />
-          Address Line 1
-        </label>
-        <input
-          type="text"
-          value={values.address_line_1}
-          onChange={(e) => onChange("address_line_1", e.target.value)}
-          className={`w-full rounded-xl px-4 py-3 border transition ${
-            errors.address_line_1
-              ? "border-red-400 focus:ring-red-400"
-              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
-          } focus:ring-2 bg-white focus:outline-none`}
-          placeholder="Street address"
-        />
-        {errors.address_line_1 && (
-          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-            <span>•</span> {errors.address_line_1}
-          </p>
-        )}
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="text-sm font-semibold text-[#3E2723] mb-2 block">
-          Apartment, Suite, Floor (Optional)
-        </label>
-        <input
-          type="text"
-          value={values.address_line_2}
-          onChange={(e) => onChange("address_line_2", e.target.value)}
-          className="w-full rounded-xl px-4 py-3 border border-[#E5DCC5] focus:ring-[#D4AF37] focus:ring-2 bg-white focus:outline-none transition"
-          placeholder="Apartment, suite, floor, building name, etc."
-        />
-      </div>
-
-      <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
-          <span className="w-1 h-1 bg-[#D4AF37] rounded-full"></span>
-          City
-        </label>
-        <input
-          type="text"
-          value={values.city}
-          onChange={(e) => onChange("city", e.target.value)}
-          className={`w-full rounded-xl px-4 py-3 border transition ${
-            errors.city
-              ? "border-red-400 focus:ring-red-400"
-              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
-          } focus:ring-2 bg-white focus:outline-none`}
-          placeholder="City"
-        />
-        {errors.city && (
-          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-            <span>•</span> {errors.city}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
-          <span className="w-1 h-1 bg-[#D4AF37] rounded-full"></span>
-          Emirate
-        </label>
-        <select
-          value={values.emirate}
-          onChange={(e) => onChange("emirate", e.target.value)}
-          className={`w-full rounded-xl px-4 py-3 border transition focus:outline-none ${
-            errors.emirate
-              ? "border-red-400 focus:ring-red-400"
-              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
-          } focus:ring-2 bg-white`}
-        >
-          <option value="">Select Emirate</option>
-          {UAE_EMIRATES.map((em) => (
-            <option key={em} value={em}>
-              {em}
-            </option>
-          ))}
-        </select>
-        {errors.emirate && (
-          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-            <span>•</span> {errors.emirate}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="text-sm font-semibold text-[#3E2723] mb-2 block">Country</label>
-        <div className="relative">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-[#3E2723] mb-3 uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full"></span>
+            Full Name
+          </label>
           <input
-            value="United Arab Emirates"
-            disabled
-            className="w-full rounded-xl px-4 py-3 text-[#7A6B50] border border-[#E5DCC5] bg-gradient-to-r from-[#F8F5EC] to-[#FFF8F0] cursor-not-allowed"
+            type="text"
+            value={values.full_name}
+            onChange={(e) => onChange("full_name", e.target.value)}
+            className={`w-full rounded-lg px-4 py-3 border-2 transition duration-200 ${
+              errors.full_name
+                ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                : "border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30"
+            } bg-gradient-to-b from-white to-[#FFFBF0] focus:outline-none font-medium`}
+            placeholder="Your full name"
           />
-          <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D4AF37]" />
+          {errors.full_name && (
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1 font-medium">
+              <span>•</span> {errors.full_name}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-[#3E2723] mb-3 uppercase tracking-wider">
+            <Phone size={14} className="text-[#D4AF37]" />
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            value={values.phone}
+            onChange={(e) => onChange("phone", e.target.value)}
+            className={`w-full rounded-lg px-4 py-3 border-2 transition duration-200 ${
+              errors.phone
+                ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                : "border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30"
+            } bg-gradient-to-b from-white to-[#FFFBF0] focus:outline-none font-medium`}
+            placeholder="+971 50 XXX XXXX"
+          />
+          {errors.phone && (
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1 font-medium">
+              <span>•</span> {errors.phone}
+            </p>
+          )}
+        </div>
+
+
+        <div className="md:col-span-2">
+          <label className="flex items-center gap-2 text-sm font-bold text-[#3E2723] mb-3 uppercase tracking-wider">
+            <MapPin size={14} className="text-[#D4AF37]" />
+            Address Line 1
+          </label>
+          <input
+            type="text"
+            value={values.address_line_1}
+            onChange={(e) => onChange("address_line_1", e.target.value)}
+            className={`w-full rounded-lg px-4 py-3 border-2 transition duration-200 ${
+              errors.address_line_1
+                ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                : "border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30"
+            } bg-gradient-to-b from-white to-[#FFFBF0] focus:outline-none font-medium`}
+            placeholder="Street address"
+          />
+          {errors.address_line_1 && (
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1 font-medium">
+              <span>•</span> {errors.address_line_1}
+            </p>
+          )}
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="text-sm font-bold text-[#3E2723] mb-3 block uppercase tracking-wider">
+            Apartment, Suite, Floor (Optional)
+          </label>
+          <input
+            type="text"
+            value={values.address_line_2}
+            onChange={(e) => onChange("address_line_2", e.target.value)}
+            className="w-full rounded-lg px-4 py-3 border-2 border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30 bg-gradient-to-b from-white to-[#FFFBF0] focus:outline-none transition duration-200 font-medium"
+            placeholder="Apartment, suite, floor, building name, etc."
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-[#3E2723] mb-3 uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full"></span>
+            City
+          </label>
+          <input
+            type="text"
+            value={values.city}
+            onChange={(e) => onChange("city", e.target.value)}
+            className={`w-full rounded-lg px-4 py-3 border-2 transition duration-200 ${
+              errors.city
+                ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                : "border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30"
+            } bg-gradient-to-b from-white to-[#FFFBF0] focus:outline-none font-medium`}
+            placeholder="City"
+          />
+          {errors.city && (
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1 font-medium">
+              <span>•</span> {errors.city}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-[#3E2723] mb-3 uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full"></span>
+            Emirate
+          </label>
+          <select
+            value={values.emirate}
+            onChange={(e) => onChange("emirate", e.target.value)}
+            className={`w-full rounded-lg px-4 py-3 border-2 transition duration-200 focus:outline-none font-medium ${
+              errors.emirate
+                ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                : "border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30"
+            } bg-gradient-to-b from-white to-[#FFFBF0]`}
+          >
+            <option value="">Select Emirate</option>
+            {UAE_EMIRATES.map((em) => (
+              <option key={em} value={em}>
+                {em}
+              </option>
+            ))}
+          </select>
+          {errors.emirate && (
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1 font-medium">
+              <span>•</span> {errors.emirate}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="text-sm font-bold text-[#3E2723] mb-3 block uppercase tracking-wider">Country</label>
+          <div className="relative">
+            <input
+              value="United Arab Emirates"
+              disabled
+              className="w-full rounded-lg px-4 py-3 text-[#7A6B50] border-2 border-[#E5DCC5] bg-gradient-to-r from-[#F8F5EC] to-[#FFF8F0] cursor-not-allowed font-medium"
+            />
+            <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D4AF37]" />
+          </div>
         </div>
       </div>
     </div>
