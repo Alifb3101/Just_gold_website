@@ -99,7 +99,6 @@ export default function Checkout() {
   const [guestEmail, setGuestEmail] = useState(guestEmailValue || "");
   const [guestFullName, setGuestFullName] = useState(guestFullNameValue || "");
   const [guestPhone, setGuestPhone] = useState(guestPhoneValue || "");
-  const [showAddressForm, setShowAddressForm] = useState(false);
 
   const submitLockRef = useRef(false);
 
@@ -411,32 +410,27 @@ export default function Checkout() {
 
               {/* Address Form */}
               <div>
-                {!showAddressForm ? (
+                {savedAddresses.length > 0 && !selectedAddressId && (
                   <button
-                    onClick={() => setShowAddressForm(true)}
-                    className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-[#D4AF37] bg-white hover:bg-[#FFF9F0] text-[#D4AF37] font-semibold flex items-center justify-center gap-2 transition duration-200"
+                    onClick={() => {
+                      setSelectedAddressId(null);
+                      setAddress(INITIAL_ADDRESS);
+                      setErrors({});
+                    }}
+                    className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-[#D4AF37] bg-white hover:bg-[#FFF9F0] text-[#D4AF37] font-semibold flex items-center justify-center gap-2 transition duration-200 mb-4"
                   >
                     <span className="text-xl">+</span>
                     Add New Address
                   </button>
-                ) : (
-                  <>
-                    <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">
-                      {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
-                    </p>
-                    <AddressForm
-                      values={address}
-                      errors={errors}
-                      onChange={onAddressChange}
-                    />
-                    <button
-                      onClick={() => setShowAddressForm(false)}
-                      className="mt-4 w-full py-2 px-4 rounded-lg border border-[#E5DCC5] text-[#7A6B50] hover:bg-[#F5F0E8] text-sm font-medium transition"
-                    >
-                      Cancel
-                    </button>
-                  </>
                 )}
+                <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">
+                  {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
+                </p>
+                <AddressForm
+                  values={address}
+                  errors={errors}
+                  onChange={onAddressChange}
+                />
               </div>
             </LuxuryCard>
 
