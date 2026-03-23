@@ -14,6 +14,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { preloadOrderSuccessPage } from "@/pages/prefetch";
 import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 import OrderSummary from "@/components/OrderSummary";
+import { MapPin, Phone, Mail, Lock, CheckCircle2 } from "lucide-react";
 
 /* ---------------- UAE CONFIG ---------------- */
 
@@ -292,66 +293,126 @@ export default function Checkout() {
 
   return (
     <main
-      className={`min-h-screen bg-gradient-to-b from-[#FFFDF8] via-[#FFF9F0] to-[#FDF6E9] transition-all duration-500 ${
-        isEntering ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      className={`min-h-screen bg-gradient-to-br from-[#FFFDF8] via-[#FFF9F0] to-[#F8F2E8] transition-all duration-700 ${
+        isEntering ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10 py-12">
+      {/* Decorative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#D4AF37]/3 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        
+        {/* Header */}
+        <div className="mb-8 lg:mb-12">
+          <h1 className="text-3xl lg:text-4xl font-bold text-[#2C1F1B] mb-2">Secure Checkout</h1>
+          <p className="text-[#7A6B50] flex items-center gap-2">
+            <Lock size={16} />
+            Your order is protected and secure
+          </p>
+        </div>
+
+        {/* Cancelled Payment Alert */}
         {searchParams.get("canceled") ? (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-[#5A452E] flex items-center justify-between gap-3">
-            <p className="font-medium">Payment was cancelled. Review your cart and try again.</p>
+          <div className="mb-8 rounded-2xl border-l-4 border-[#D4AF37] bg-gradient-to-r from-amber-50 to-transparent px-6 py-4 flex items-center justify-between gap-4 shadow-sm">
+            <div>
+              <p className="font-semibold text-[#3E2723] mb-1">Payment Cancelled</p>
+              <p className="text-sm text-[#5A452E]">You can review your cart and try again at any time.</p>
+            </div>
             <button
               onClick={() => navigate("/cart")}
-              className="rounded-xl bg-[#D4AF37] px-4 py-2 text-white text-xs font-semibold hover:bg-[#C19B2C] transition"
+              className="rounded-xl bg-[#D4AF37] px-6 py-2 text-white text-sm font-semibold hover:bg-[#C19B2C] transition-all duration-200 hover:shadow-lg flex-shrink-0"
             >
               Return to Cart
             </button>
           </div>
         ) : null}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_520px] gap-12">
 
-          {/* LEFT SIDE */}
-          <section className="space-y-10">
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            <LuxuryCard step="1" title="Shipping Address">
+          {/* LEFT SIDE - FORM */}
+          <section className="lg:col-span-2 space-y-6">
 
+            {/* Shipping Address Card */}
+            <LuxuryCard 
+              step="1" 
+              title="Shipping Address"
+              icon={<MapPin size={20} />}
+              description="Where should we deliver your order?"
+            >
               {isGuest ? (
-                <div className="grid grid-cols-1 gap-6 mb-6">
-                  <InputField
-                    label="Email for receipt"
-                    type="email"
-                    value={guestEmail}
-                    error={errors.guest_email}
-                    onChange={setGuestEmail}
-                  />
+                <div className="grid grid-cols-1 gap-5 mb-6 pb-6 border-b border-[#E5DCC5]">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
+                      <Mail size={16} />
+                      Email for Receipt
+                    </label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className={`w-full rounded-xl px-4 py-3 border transition ${
+                        errors.guest_email
+                          ? "border-red-400 focus:ring-red-400"
+                          : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+                      } focus:ring-2 bg-white focus:outline-none`}
+                    />
+                    {errors.guest_email && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <span>•</span> {errors.guest_email}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ) : null}
 
-              {savedAddresses.map((addr) => {
-                const active =
-                  Number(selectedAddressId) === Number(addr.id);
+              {/* Saved Addresses */}
+              {savedAddresses.length > 0 && (
+                <div className="mb-6 pb-6 border-b border-[#E5DCC5]">
+                  <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">Your Saved Addresses</p>
+                  <div className="space-y-3">
+                    {savedAddresses.map((addr) => {
+                      const active = Number(selectedAddressId) === Number(addr.id);
+                      return (
+                        <button
+                          key={addr.id}
+                          onClick={() => onSelectSavedAddress(addr.id)}
+                          className={`w-full text-left p-4 rounded-xl border-2 transition duration-200 ${
+                            active
+                              ? "border-[#D4AF37] bg-gradient-to-r from-[#FFF8EA] to-white shadow-md"
+                              : "border-[#E5DCC5] bg-white hover:border-[#D4AF37]/50"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                              active ? "border-[#D4AF37] bg-[#D4AF37]" : "border-[#D4AF37]/40"
+                            }`}>
+                              {active && <CheckCircle2 size={20} className="text-white -m-2.5" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-[#3E2723]">{addr.full_name}</p>
+                              <p className="text-sm text-[#7A6B50] mt-1">{addr.line1 || addr.address_line_1}</p>
+                              {(addr.line2 || addr.address_line_2) && (
+                                <p className="text-xs text-[#999] mt-1">{addr.line2 || addr.address_line_2}</p>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-                return (
-                  <button
-                    key={addr.id}
-                    onClick={() => onSelectSavedAddress(addr.id)}
-                    className={`w-full text-left p-5 rounded-2xl border transition ${
-                      active
-                        ? "border-[#D4AF37] bg-[#FFF8EA] shadow-md"
-                        : "border-[#E7DBC2] hover:border-[#D4AF37]"
-                    }`}
-                  >
-                    <p className="font-semibold">
-                      {addr.full_name}
-                    </p>
-                    <p className="text-sm text-[#6B5A43]">
-                      {addr.line1 || addr.address_line_1}
-                    </p>
-                  </button>
-                );
-              })}
-
-              <div className="mt-8">
+              {/* Address Form */}
+              <div>
+                <p className="text-xs font-semibold text-[#7A6B50] uppercase tracking-wider mb-4">
+                  {savedAddresses.length > 0 ? "Or Enter New Address" : "Enter Delivery Address"}
+                </p>
                 <AddressForm
                   values={address}
                   errors={errors}
@@ -360,7 +421,13 @@ export default function Checkout() {
               </div>
             </LuxuryCard>
 
-            <LuxuryCard step="2" title="Payment Method">
+            {/* Payment Method Card */}
+            <LuxuryCard 
+              step="2" 
+              title="Payment Method"
+              icon={<Lock size={20} />}
+              description="Choose how you'd like to pay"
+            >
               <PaymentMethodSelector
                 value={checkout.paymentMethod}
                 onChange={(method) => {
@@ -369,24 +436,37 @@ export default function Checkout() {
               />
             </LuxuryCard>
 
+            {/* Place Order Button */}
             <button
               onClick={onPlaceOrder}
               disabled={placeOrderDisabled}
-              className={`w-full py-4 rounded-2xl font-semibold text-lg tracking-wide transition-all duration-300 ${
+              className={`w-full py-4 px-6 rounded-xl font-semibold text-base tracking-wide transition-all duration-300 flex items-center justify-center gap-2 ${
                 placeOrderDisabled
-                  ? "bg-[#D8C9A5] text-white cursor-not-allowed"
-                  : "bg-gradient-to-r from-[#D4AF37] via-[#E6C35C] to-[#C19B2C] text-white shadow-lg hover:shadow-2xl hover:-translate-y-1 active:scale-95"
+                  ? "bg-gradient-to-r from-[#D8C9A5] to-[#C9B896] text-white/70 cursor-not-allowed"
+                  : "bg-gradient-to-r from-[#D4AF37] via-[#E6C35C] to-[#C19B2C] text-white shadow-lg hover:shadow-2xl hover:-translate-y-0.5 active:scale-95"
               }`}
             >
-              {checkout.isPlacingOrder
-                ? "Processing..."
-                : "Place Secure Order"}
+              {checkout.isPlacingOrder ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processing Order...
+                </>
+              ) : (
+                <>
+                  <Lock size={18} />
+                  Place Secure Order
+                </>
+              )}
             </button>
           </section>
 
-          {/* RIGHT SIDE */}
-          <aside className="xl:sticky xl:top-12">
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-[#D4AF37]/20">
+          {/* RIGHT SIDE - ORDER SUMMARY */}
+          <aside className="lg:sticky lg:top-8 h-fit">
+            <div className="bg-gradient-to-br from-white to-[#FFF8F0] rounded-2xl p-7 shadow-xl border border-[#D4AF37]/20">
+              <h3 className="text-lg font-bold text-[#2C1F1B] mb-6 flex items-center gap-2">
+                <CheckCircle2 size={20} className="text-[#D4AF37]" />
+                Order Summary
+              </h3>
               <OrderSummary items={items} subtotal={subtotal} shippingFee={shipping} discount={discount} />
             </div>
           </aside>
@@ -401,56 +481,126 @@ export default function Checkout() {
 
 function AddressForm({ values, errors, onChange }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-      <InputField
-        label="Full Name"
-        value={values.full_name}
-        error={errors.full_name}
-        onChange={(v) => onChange("full_name", v)}
-      />
-
-      <InputField
-        label="Phone Number"
-        value={values.phone}
-        error={errors.phone}
-        onChange={(v) => onChange("phone", v)}
-      />
-
-      <div className="md:col-span-2">
-        <InputField
-          label="Address Line 1"
-          value={values.address_line_1}
-          error={errors.address_line_1}
-          onChange={(v) => onChange("address_line_1", v)}
-        />
-      </div>
-
-      <div className="md:col-span-2">
-        <InputField
-          label="Apartment, Suite (Optional)"
-          value={values.address_line_2}
-          onChange={(v) => onChange("address_line_2", v)}
-        />
-      </div>
-
-      <InputField
-        label="City"
-        value={values.city}
-        error={errors.city}
-        onChange={(v) => onChange("city", v)}
-      />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
       <div>
-        <label className="block text-sm font-medium mb-2">
+        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
+          <span className="w-1 h-1 bg-[#D4AF37] rounded-full"></span>
+          Full Name
+        </label>
+        <input
+          type="text"
+          value={values.full_name}
+          onChange={(e) => onChange("full_name", e.target.value)}
+          className={`w-full rounded-xl px-4 py-3 border transition ${
+            errors.full_name
+              ? "border-red-400 focus:ring-red-400"
+              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+          } focus:ring-2 bg-white focus:outline-none`}
+          placeholder="Your full name"
+        />
+        {errors.full_name && (
+          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+            <span>•</span> {errors.full_name}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
+          <Phone size={14} className="text-[#D4AF37]" />
+          Phone Number
+        </label>
+        <input
+          type="tel"
+          value={values.phone}
+          onChange={(e) => onChange("phone", e.target.value)}
+          className={`w-full rounded-xl px-4 py-3 border transition ${
+            errors.phone
+              ? "border-red-400 focus:ring-red-400"
+              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+          } focus:ring-2 bg-white focus:outline-none`}
+          placeholder="+971 50 XXX XXXX"
+        />
+        {errors.phone && (
+          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+            <span>•</span> {errors.phone}
+          </p>
+        )}
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
+          <MapPin size={14} className="text-[#D4AF37]" />
+          Address Line 1
+        </label>
+        <input
+          type="text"
+          value={values.address_line_1}
+          onChange={(e) => onChange("address_line_1", e.target.value)}
+          className={`w-full rounded-xl px-4 py-3 border transition ${
+            errors.address_line_1
+              ? "border-red-400 focus:ring-red-400"
+              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+          } focus:ring-2 bg-white focus:outline-none`}
+          placeholder="Street address"
+        />
+        {errors.address_line_1 && (
+          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+            <span>•</span> {errors.address_line_1}
+          </p>
+        )}
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="text-sm font-semibold text-[#3E2723] mb-2 block">
+          Apartment, Suite, Floor (Optional)
+        </label>
+        <input
+          type="text"
+          value={values.address_line_2}
+          onChange={(e) => onChange("address_line_2", e.target.value)}
+          className="w-full rounded-xl px-4 py-3 border border-[#E5DCC5] focus:ring-[#D4AF37] focus:ring-2 bg-white focus:outline-none transition"
+          placeholder="Apartment, suite, floor, building name, etc."
+        />
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
+          <span className="w-1 h-1 bg-[#D4AF37] rounded-full"></span>
+          City
+        </label>
+        <input
+          type="text"
+          value={values.city}
+          onChange={(e) => onChange("city", e.target.value)}
+          className={`w-full rounded-xl px-4 py-3 border transition ${
+            errors.city
+              ? "border-red-400 focus:ring-red-400"
+              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+          } focus:ring-2 bg-white focus:outline-none`}
+          placeholder="City"
+        />
+        {errors.city && (
+          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+            <span>•</span> {errors.city}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm font-semibold text-[#3E2723] mb-2">
+          <span className="w-1 h-1 bg-[#D4AF37] rounded-full"></span>
           Emirate
         </label>
         <select
           value={values.emirate}
-          onChange={(e) =>
-            onChange("emirate", e.target.value)
-          }
-          className="w-full rounded-xl border border-[#E5D7B2] bg-white px-4 py-3 focus:ring-2 focus:ring-[#D4AF37] transition"
+          onChange={(e) => onChange("emirate", e.target.value)}
+          className={`w-full rounded-xl px-4 py-3 border transition focus:outline-none ${
+            errors.emirate
+              ? "border-red-400 focus:ring-red-400"
+              : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+          } focus:ring-2 bg-white`}
         >
           <option value="">Select Emirate</option>
           {UAE_EMIRATES.map((em) => (
@@ -460,21 +610,22 @@ function AddressForm({ values, errors, onChange }) {
           ))}
         </select>
         {errors.emirate && (
-          <p className="text-red-500 text-xs mt-1">
-            {errors.emirate}
+          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+            <span>•</span> {errors.emirate}
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Country
-        </label>
-        <input
-          value="United Arab Emirates"
-          disabled
-          className="w-full rounded-xl border border-[#E5D7B2] bg-[#F8F5EC] px-4 py-3 text-[#7A6B50]"
-        />
+        <label className="text-sm font-semibold text-[#3E2723] mb-2 block">Country</label>
+        <div className="relative">
+          <input
+            value="United Arab Emirates"
+            disabled
+            className="w-full rounded-xl px-4 py-3 text-[#7A6B50] border border-[#E5DCC5] bg-gradient-to-r from-[#F8F5EC] to-[#FFF8F0] cursor-not-allowed"
+          />
+          <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#D4AF37]" />
+        </div>
       </div>
     </div>
   );
@@ -483,7 +634,7 @@ function AddressForm({ values, errors, onChange }) {
 function InputField({ label, value, onChange, error, type = "text" }) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-2">
+      <label className="text-sm font-medium mb-2">
         {label}
       </label>
       <input
@@ -493,11 +644,11 @@ function InputField({ label, value, onChange, error, type = "text" }) {
         className={`w-full rounded-xl px-4 py-3 border transition ${
           error
             ? "border-red-400 focus:ring-red-400"
-            : "border-[#E5D7B2] focus:ring-[#D4AF37]"
-        } focus:ring-2 bg-white`}
+            : "border-[#E5DCC5] focus:ring-[#D4AF37]"
+        } focus:ring-2 bg-white focus:outline-none`}
       />
       {error && (
-        <p className="text-red-500 text-xs mt-1">
+        <p className="text-red-500 text-xs mt-2">
           {error}
         </p>
       )}
@@ -505,18 +656,29 @@ function InputField({ label, value, onChange, error, type = "text" }) {
   );
 }
 
-function LuxuryCard({ step, title, children }) {
+function LuxuryCard({ step, title, children, icon, description }) {
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-3xl p-8 border border-[#D4AF37]/20 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-9 h-9 rounded-full bg-[#2C1F1B] text-white flex items-center justify-center text-sm font-semibold">
-          {step}
+    <div className="bg-gradient-to-br from-white to-[#FFF8F0] rounded-2xl border border-[#E5DCC5] shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+      {/* Header */}
+      <div className="px-6 lg:px-8 py-5 border-b border-[#E5DCC5] bg-gradient-to-r from-[#FFFDF8] to-[#FFF8F0]">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#C19B2C] text-white flex items-center justify-center text-sm font-bold shadow-lg">
+            {step}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-[#2C1F1B] flex items-center gap-2">
+              {icon && <span className="text-[#D4AF37]">{icon}</span>}
+              {title}
+            </h3>
+            {description && <p className="text-xs text-[#7A6B50] mt-1">{description}</p>}
+          </div>
         </div>
-        <h2 className="text-xl font-semibold text-[#2C1F1B]">
-          {title}
-        </h2>
       </div>
-      {children}
+
+      {/* Content */}
+      <div className="px-6 lg:px-8 py-6">
+        {children}
+      </div>
     </div>
   );
 }
