@@ -1201,7 +1201,7 @@ export function ProductDetailsPage() {
         {/* ⭐ REVIEWS SECTION                          */}
         {product && (
           <div className="border-t border-gray-200 pt-6 md:pt-12">
-            <Reviews productId={product.id} />
+            <Reviews productId={Number(product.id)} />
           </div>
         )}
 

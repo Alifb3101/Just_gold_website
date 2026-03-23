@@ -109,7 +109,7 @@ const RatingDistribution = ({ stats }: { stats: ReviewsResponse['data']['stats']
   return (
     <div className="space-y-2">
       {[5, 4, 3, 2, 1].map((rating) => {
-        const count = (stats.rating_distribution?.[rating] as number) || 0;
+        const count = (stats.rating_distribution?.[rating as 1 | 2 | 3 | 4 | 5] as number) || 0;
         const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
 
         return (

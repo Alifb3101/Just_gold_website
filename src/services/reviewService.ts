@@ -31,14 +31,7 @@ export interface ReviewsResponse {
     stats: {
       average_rating: number;
       total_reviews: number;
-      rating_distribution: {
-        [key: number]: number;
-        1?: number;
-        2?: number;
-        3?: number;
-        4?: number;
-        5?: number;
-      };
+      rating_distribution: Record<1 | 2 | 3 | 4 | 5, number>;
     };
   };
   success: boolean;
