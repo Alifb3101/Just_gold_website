@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, AlertCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { ASSET_BASE_URL } from '@/app/api/http';
+import { getProductImage } from '@/app/utils/productImage';
 
 /* =========================
    🧠 Types & Interfaces
@@ -12,6 +13,12 @@ type SuggestionProduct = {
   name: string;
   price: number;
   main_image: string;
+  main_image_variants?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    zoom?: string;
+  };
   slug: string;
 };
 
@@ -76,11 +83,18 @@ const ProductCard = React.memo(({
     return null;
   }
 
+  const imageSource = useMemo(
+    () => ({ image: product.main_image, image_variants: product.main_image_variants }),
+    [product.main_image, product.main_image_variants]
+  );
+
   const imageUrl = useMemo(() => {
-    if (!product.main_image) return `${ASSET_BASE_URL}/placeholder.png`;
-    if (product.main_image.startsWith('http')) return product.main_image;
-    return `${ASSET_BASE_URL}/${product.main_image}`;
-  }, [product.main_image]);
+    const candidate = getProductImage(imageSource, 'thumbnail') || getProductImage(imageSource, 'medium');
+    if (!candidate) return `${ASSET_BASE_URL}/placeholder.png`;
+    if (candidate.startsWith('http')) return candidate;
+    if (candidate.startsWith('/')) return `${ASSET_BASE_URL}${candidate}`;
+    return `${ASSET_BASE_URL}/${candidate}`;
+  }, [imageSource]);
 
   const handleClick = useCallback(() => {
     // Track suggestion click event

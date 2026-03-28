@@ -1,5 +1,12 @@
 export interface ProductImage {
   id: number;
+  image: string;
+  image_variants?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    zoom?: string;
+  };
   url: string;
   alt: string;
   type: 'image' | 'video';
@@ -16,7 +23,19 @@ export interface ProductShade {
   colorPanelValue?: string;
   finishType?: string;
   imageUrl?: string;
+  imageVariants?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    zoom?: string;
+  };
   secondaryImageUrl?: string;
+  secondaryImageVariants?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    zoom?: string;
+  };
   price: number;
   discountPrice?: number | null;
   stock: number;

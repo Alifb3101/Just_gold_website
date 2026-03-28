@@ -4,12 +4,19 @@ import { useApp } from '@/app/contexts/AppContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
 
 interface ProductCardProps {
   product: {
     id: number;
     name: string;
     image: string;
+    image_variants?: {
+      thumbnail?: string;
+      medium?: string;
+      large?: string;
+      zoom?: string;
+    };
     price: number;
     rating: number;
     reviews: number;
@@ -26,6 +33,8 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
 
   const productId = String(product.id);
   const isWishlisted = isInWishlist(productId);
+  const cardImage = getProductImage(product, 'thumbnail');
+  const cardImageSrcSet = getProductImageSrcSet(product);
 
   const productSlug = useMemo(() => {
     const normalized = (product.slug ?? product.name)
@@ -45,7 +54,7 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
 
     addToWishlist(productId, undefined, {
       name: product.name,
-      image: product.image,
+      image: cardImage,
     });
   };
 
@@ -89,7 +98,9 @@ export const ProductCard = React.memo(function ProductCard({ product }: ProductC
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-[#FAF3E0]">
         <img
-          src={product.image}
+          src={cardImage}
+          srcSet={cardImageSrcSet || undefined}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           alt={product.name}
           loading="lazy"
           decoding="async"

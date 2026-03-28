@@ -9,6 +9,22 @@ const buildAssetUrl = (value?: string | null) => {
   return `${ASSET_BASE_URL}/${value}`;
 };
 
+const normalizeImageVariants = (variants?: {
+  thumbnail?: string | null;
+  medium?: string | null;
+  large?: string | null;
+  zoom?: string | null;
+} | null) => {
+  if (!variants) return undefined;
+
+  return {
+    thumbnail: buildAssetUrl(variants.thumbnail) || undefined,
+    medium: buildAssetUrl(variants.medium) || undefined,
+    large: buildAssetUrl(variants.large) || undefined,
+    zoom: buildAssetUrl(variants.zoom) || undefined,
+  };
+};
+
 const resolveMediaType = (url: string, mediaType?: string): 'image' | 'video' => {
   if (mediaType === 'video') return 'video';
   if (/\.(mp4|webm|ogg)$/i.test(url)) return 'video';
@@ -61,7 +77,9 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
       colorPanelValue,
       finishType,
       imageUrl: buildAssetUrl(variant.main_image) || undefined,
+      imageVariants: normalizeImageVariants(variant.main_image_variants),
       secondaryImageUrl: buildAssetUrl(variant.secondary_image) || undefined,
+      secondaryImageVariants: normalizeImageVariants(variant.secondary_image_variants),
       price: Number(variant.price) || 0,
       discountPrice: variant.discount_price ? Number(variant.discount_price) : null,
       stock: Number.isFinite(variant.stock) ? variant.stock : 0,
@@ -72,12 +90,16 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
   const variantImages = (api.variants ?? []).flatMap((variant, index) => {
     const mainUrl = buildAssetUrl(variant.main_image);
     const secondaryUrl = buildAssetUrl(variant.secondary_image);
+    const mainImageVariants = normalizeImageVariants(variant.main_image_variants);
+    const secondaryImageVariants = normalizeImageVariants(variant.secondary_image_variants);
     const baseId = index * 2 + 1;
 
     const images = [] as ProductImage[];
     if (mainUrl) {
       images.push({
         id: baseId,
+        image: mainUrl,
+        image_variants: mainImageVariants,
         url: mainUrl,
         alt: `${api.name} - ${variant.shade}`,
         type: 'image' as const,
@@ -87,6 +109,8 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
     if (secondaryUrl) {
       images.push({
         id: baseId + 1,
+        image: secondaryUrl,
+        image_variants: secondaryImageVariants,
         url: secondaryUrl,
         alt: `${api.name} - ${variant.shade} alt`,
         type: 'image' as const,
@@ -100,6 +124,7 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
     const url = buildAssetUrl(media.image_url);
     return {
       id: variantImages.length + index + 1,
+      image: url,
       url,
       alt: `${api.name} media ${index + 1}`,
       type: resolveMediaType(url, media.media_type),
@@ -107,6 +132,19 @@ export const mapApiProductToProduct = (api: ApiProduct): Product => {
   });
 
   const images = [...variantImages, ...mediaImages].filter((image) => image.url);
+
+  const primaryImage = buildAssetUrl(api.image);
+  const primaryImageVariants = normalizeImageVariants(api.image_variants);
+  if (primaryImage) {
+    images.unshift({
+      id: images.length + 1,
+      image: primaryImage,
+      image_variants: primaryImageVariants,
+      url: primaryImage,
+      alt: `${api.name} primary image`,
+      type: 'image',
+    });
+  }
 
   const firstVariant = api.variants?.[0];
   const price = firstVariant

@@ -4,6 +4,7 @@ import { addToWishlist as apiAddToWishlist, getWishlist as apiGetWishlist, remov
 import type { WishlistItemApi, WishlistResponse } from '@/services/wishlistService';
 import { useAuth } from './AuthContext';
 import { ApiError } from '@/app/api/http';
+import { getProductImage } from '@/app/utils/productImage';
 
 export interface WishlistItem {
   id: string;
@@ -47,13 +48,27 @@ const mapWishlistItem = (item: WishlistItemApi, prevItems: WishlistItem[]): Wish
   const productVariantId = item.product_variant_id ? String(item.product_variant_id) : null;
   const itemId = buildWishlistItemKey(productId, productVariantId);
   const existing = prevItems.find((p) => p.id === itemId);
+  const mainVariantMedium = getProductImage(
+    {
+      image: item.main_image,
+      image_variants: item.main_image_variants,
+    },
+    'medium'
+  );
+  const secondaryVariantMedium = getProductImage(
+    {
+      image: item.secondary_image,
+      image_variants: item.secondary_image_variants,
+    },
+    'medium'
+  );
 
   return {
     id: itemId,
     productId,
     productVariantId,
     name: item.product_name,
-    image: item.main_image || item.secondary_image || existing?.image || '',
+    image: mainVariantMedium || secondaryVariantMedium || existing?.image || '',
     price: Number(item.current_price),
     category: item.product_model_no ? `Model No: ${item.product_model_no}` : undefined,
     colorPanelType: item.color_panel_type,

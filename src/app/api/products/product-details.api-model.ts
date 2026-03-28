@@ -2,8 +2,20 @@ export interface ApiVariant {
   id: number;
   shade: string;
   secondary_image?: string | null;
+  secondary_image_variants?: {
+    thumbnail?: string | null;
+    medium?: string | null;
+    large?: string | null;
+    zoom?: string | null;
+  } | null;
   stock: number;
   main_image: string;
+  main_image_variants?: {
+    thumbnail?: string | null;
+    medium?: string | null;
+    large?: string | null;
+    zoom?: string | null;
+  } | null;
   price: string;
   discount_price: string | null;
   variant_model_no: string;
@@ -22,6 +34,13 @@ export interface ApiProduct {
   name: string;
   slug: string;
   description: string;
+  image?: string | null;
+  image_variants?: {
+    thumbnail?: string | null;
+    medium?: string | null;
+    large?: string | null;
+    zoom?: string | null;
+  } | null;
   short_description?: string | null;
   category_id: number;
   is_featured: boolean;

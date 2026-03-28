@@ -9,10 +9,27 @@ const buildAssetUrl = (value?: string | null) => {
   return `${ASSET_BASE_URL}/${value}`;
 };
 
+const normalizeImageVariants = (variants?: {
+  thumbnail?: string | null;
+  medium?: string | null;
+  large?: string | null;
+  zoom?: string | null;
+} | null) => {
+  if (!variants) return undefined;
+
+  return {
+    thumbnail: buildAssetUrl(variants.thumbnail) || undefined,
+    medium: buildAssetUrl(variants.medium) || undefined,
+    large: buildAssetUrl(variants.large) || undefined,
+    zoom: buildAssetUrl(variants.zoom) || undefined,
+  };
+};
+
 const resolvePrimaryImage = (api: ApiProductListItem) => {
+  const productImage = api.image;
   const variantImage = api.variants?.find((variant) => variant.main_image)?.main_image;
   const mediaImage = api.media?.[0]?.image_url;
-  const selected = variantImage || mediaImage || "";
+  const selected = productImage || variantImage || mediaImage || "";
   return buildAssetUrl(selected);
 };
 
@@ -36,7 +53,8 @@ export const mapApiListProductToProduct = (api: ApiProductListItem): ProductList
 
   const thumbnailUrl = resolveThumbnail(api);
   const hoverImageUrl = resolveHoverImage(api);
-  const primaryImage = thumbnailUrl || resolvePrimaryImage(api);
+  const imageVariants = normalizeImageVariants(api.image_variants);
+  const primaryImage = resolvePrimaryImage(api) || thumbnailUrl;
 
   return {
     id: String(api.id),
@@ -44,6 +62,8 @@ export const mapApiListProductToProduct = (api: ApiProductListItem): ProductList
     name: api.name,
     price,
     currency: "AED",
+    image: primaryImage,
+    image_variants: imageVariants,
     imageUrl: primaryImage,
     thumbnailUrl,
     hoverImageUrl,

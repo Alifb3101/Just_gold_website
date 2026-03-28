@@ -4,6 +4,13 @@ export interface ProductListItem {
   name: string;
   price: number;
   currency: string;
+  image: string;
+  image_variants?: {
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    zoom?: string;
+  };
   imageUrl: string;
   thumbnailUrl?: string;
   hoverImageUrl?: string;

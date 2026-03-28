@@ -11,6 +11,7 @@ import { useCategories } from '@/store/categoryStore';
 import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/cartService';
 import { SEOHead, ProductSchema, BreadcrumbSchema } from '@/app/components/seo';
 import { SEO_CONFIG, stripHtml, truncateDescription } from '@/app/utils/seo';
+import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
 import ProductSuggestions from '../components/ProductSuggestions';
 import { Reviews } from '../components/Reviews';
 
@@ -260,7 +261,7 @@ export function ProductDetailsPage() {
   const productSeoData = useMemo(() => {
     if (!product) return null;
     const productUrl = `${SEO_CONFIG.siteUrl}/product/${product.id}-${product.slug}`;
-    const productImage = gallery[0]?.url || '';
+    const productImage = getProductImage(gallery[0], 'large') || getProductImage(gallery[0], 'medium') || gallery[0]?.url || '';
     return {
       name: product.name,
       description: stripHtml(product.description || product.subtitle),
@@ -315,7 +316,21 @@ export function ProductDetailsPage() {
     if (maxStock && quantity > maxStock) return;
     if (maxStock === 0) return;
 
-    const imageCandidate = selectedShadeData?.imageUrl
+    const imageCandidate = getProductImage(
+        {
+          image: selectedShadeData?.imageUrl,
+          image_variants: selectedShadeData?.imageVariants,
+        },
+        'medium'
+      )
+      || getProductImage(
+        {
+          image: selectedShadeData?.secondaryImageUrl,
+          image_variants: selectedShadeData?.secondaryImageVariants,
+        },
+        'medium'
+      )
+      || selectedShadeData?.imageUrl
       || selectedShadeData?.secondaryImageUrl
       || variantMedia[0]?.url
       || baseMedia[0]?.url
@@ -383,7 +398,21 @@ export function ProductDetailsPage() {
       return;
     }
 
-    const imageCandidate = selectedShadeData?.imageUrl
+    const imageCandidate = getProductImage(
+        {
+          image: selectedShadeData?.imageUrl,
+          image_variants: selectedShadeData?.imageVariants,
+        },
+        'medium'
+      )
+      || getProductImage(
+        {
+          image: selectedShadeData?.secondaryImageUrl,
+          image_variants: selectedShadeData?.secondaryImageVariants,
+        },
+        'medium'
+      )
+      || selectedShadeData?.imageUrl
       || selectedShadeData?.secondaryImageUrl
       || variantMedia[0]?.url
       || baseMedia[0]?.url
@@ -461,7 +490,17 @@ export function ProductDetailsPage() {
         'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"%3E%3Crect width="120" height="120" rx="16" fill="%23F1E8DA"/%3E%3Cpolygon points="48,35 88,60 48,85" fill="%23D4AF37"/%3E%3C/svg%3E'
       );
     }
-    return image.url;
+    return getProductImage(image, 'thumbnail') || image.url;
+  };
+
+  const getDetailImageSrc = (image: ProductImage | null, type: 'medium' | 'large' | 'zoom' = 'medium') => {
+    if (!image) return '';
+    return getProductImage(image, type) || image.url;
+  };
+
+  const getDetailImageSrcSet = (image: ProductImage | null) => {
+    if (!image || image.type === 'video') return undefined;
+    return getProductImageSrcSet(image);
   };
 
   const toggleAccordion = (id: string) => {
@@ -513,7 +552,7 @@ export function ProductDetailsPage() {
         title={product.name}
         description={truncateDescription(stripHtml(product.description || product.subtitle))}
         path={`/product/${product.id}-${product.slug}`}
-        image={gallery[0]?.url}
+        image={getProductImage(gallery[0], 'large') || getProductImage(gallery[0], 'medium') || gallery[0]?.url}
         imageAlt={product.name}
         type="product"
         keywords={[
@@ -632,9 +671,14 @@ export function ProductDetailsPage() {
                     </video>
                   ) : (
                     <img
-                      src={currentImage.url}
+                      src={getDetailImageSrc(currentImage, 'medium')}
+                      srcSet={getDetailImageSrcSet(currentImage)}
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      data-zoom-src={getDetailImageSrc(currentImage, 'zoom') || undefined}
                       alt={currentImage.alt}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   )
                 ) : (
@@ -1037,9 +1081,14 @@ export function ProductDetailsPage() {
                     </video>
                   ) : (
                     <img
-                      src={currentImage.url}
+                      src={getDetailImageSrc(currentImage, 'medium')}
+                      srcSet={getDetailImageSrcSet(currentImage)}
+                      sizes="50vw"
+                      data-zoom-src={getDetailImageSrc(currentImage, 'zoom') || undefined}
                       alt={currentImage.alt}
                       className="w-full h-full object-contain"
+                      loading="lazy"
+                      decoding="async"
                     />
                   )
                 ) : (
@@ -1080,9 +1129,14 @@ export function ProductDetailsPage() {
                     </video>
                   ) : (
                         <img
-                          src={currentImage.url}
+                          src={getDetailImageSrc(currentImage, 'large')}
+                          srcSet={getDetailImageSrcSet(currentImage)}
+                          sizes="50vw"
+                          data-zoom-src={getDetailImageSrc(currentImage, 'zoom') || undefined}
                           alt={currentImage.alt}
                           className="w-full h-full object-contain"
+                          loading="lazy"
+                          decoding="async"
                         />
                   )
                 ) : (

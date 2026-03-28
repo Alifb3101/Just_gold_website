@@ -8,6 +8,12 @@ export type HomepageProductCard = {
 	slug?: string;
 	description?: string;
 	image: string;
+	image_variants?: {
+		thumbnail?: string;
+		medium?: string;
+		large?: string;
+		zoom?: string;
+	};
 	price: number;
 	originalPrice?: number;
 	rating: number;
@@ -26,6 +32,13 @@ type ApiHomepageItem = {
 	id?: number | string | null;
 	name?: string | null;
 	slug?: string | null;
+	image?: string | null;
+	image_variants?: {
+		thumbnail?: string | null;
+		medium?: string | null;
+		large?: string | null;
+		zoom?: string | null;
+	} | null;
 	thumbnail?: string | null;
 	description?: string | null;
 	price?: number | string | null;
@@ -70,7 +83,15 @@ const mapItem = (
 		name: toString(item.name) || 'Untitled Product',
 		slug: toString(item.slug) || undefined,
 		description: toString(item.description) || undefined,
-		image: toString(item.thumbnail),
+		image: toString(item.image) || toString(item.thumbnail),
+		image_variants: item.image_variants
+			? {
+					thumbnail: toString(item.image_variants.thumbnail) || undefined,
+					medium: toString(item.image_variants.medium) || undefined,
+					large: toString(item.image_variants.large) || undefined,
+					zoom: toString(item.image_variants.zoom) || undefined,
+			  }
+			: undefined,
 		price: discountPrice ?? basePrice,
 		originalPrice: discountPrice !== null ? basePrice : undefined,
 		rating: 5,

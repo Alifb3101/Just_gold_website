@@ -5,6 +5,7 @@ import { useApp } from '@/app/contexts/AppContext';
 import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
 import type { ProductListItem } from '@/app/features/products/product-list.model';
+import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
 
 type ProductCardProps = {
   product: ProductListItem;
@@ -40,7 +41,7 @@ export const ProductCard = React.memo(function ProductCard({
       } else {
         addToWishlist(productId, undefined, {
           name: product.name,
-          image: product.thumbnailUrl || product.imageUrl,
+          image: getProductImage(product, 'thumbnail'),
         });
       }
     },
@@ -57,7 +58,7 @@ export const ProductCard = React.memo(function ProductCard({
 
       addToCart(productId, undefined, 1, {
         name: product.name,
-        image: product.thumbnailUrl || product.imageUrl,
+        image: getProductImage(product, 'thumbnail'),
       });
 
       setTimeout(() => setIsAdding(false), 700);
@@ -65,8 +66,9 @@ export const ProductCard = React.memo(function ProductCard({
     [productId, product, addToCart]
   );
 
-  const image = product.thumbnailUrl || product.imageUrl;
-  const hoverImage = product.hoverImageUrl;
+  const image = getProductImage(product, 'thumbnail');
+  const hoverImage = product.hoverImageUrl || getProductImage(product, 'medium');
+  const imageSrcSet = getProductImageSrcSet(product);
 
   return (
     <Link
@@ -96,6 +98,8 @@ export const ProductCard = React.memo(function ProductCard({
         <div className="relative aspect-square overflow-hidden bg-[#F6F1EA]">
           <img
             src={image}
+            srcSet={imageSrcSet || undefined}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             alt={product.name}
             loading="lazy"
             decoding="async"

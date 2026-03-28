@@ -4,6 +4,7 @@ import { ProductCard } from '@/app/components/products/ProductCard';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import type { HomepageData, HomepageSectionKey } from '@/services/homepageService';
 import { getHomepageDataCached } from '@/services/homepageService';
+import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
 
 type HomepageState = {
 	data: HomepageData | null;
@@ -108,6 +109,13 @@ export function HomepageProductSections() {
 		return `/product/${dealProduct.id}-${normalized}`;
 	}, [dealProduct]);
 
+	const dealProductImage = useMemo(() => {
+		if (!dealProduct) return '';
+		return getProductImage(dealProduct, 'large') || getProductImage(dealProduct, 'medium');
+	}, [dealProduct]);
+
+	const dealProductImageSrcSet = useMemo(() => getProductImageSrcSet(dealProduct), [dealProduct]);
+
 	if (state.isLoading && !state.data) {
 		return (
 			<>
@@ -164,7 +172,9 @@ export function HomepageProductSections() {
 						<div className="relative flex justify-center group">
 							<div className="absolute inset-0 bg-yellow-500/10 blur-3xl rounded-3xl" />
 							<img
-								src={dealProduct.image}
+								src={dealProductImage}
+								srcSet={dealProductImageSrcSet}
+								sizes="(max-width: 1024px) 90vw, 40vw"
 								alt={dealProduct.name}
 								loading="lazy"
 								decoding="async"

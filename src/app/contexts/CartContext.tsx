@@ -12,6 +12,7 @@ import type { CartResponse, CartItemApi } from '@/services/cartService';
 import { isVariantMismatchApiError } from '@/services/cartService';
 import { useAuth } from './AuthContext';
 import { ApiError, ASSET_BASE_URL } from '@/app/api/http';
+import { getProductImage } from '@/app/utils/productImage';
 
 export interface CartItem {
   id: string;
@@ -108,6 +109,20 @@ const normalizeColorPanelValue = (type: string | null, value?: string | null): s
 const mapCartItem = (item: CartItemApi): CartItem => {
   const colorPanelType = normalizeColorPanelType(item.color_panel_type);
   const colorPanelValue = normalizeColorPanelValue(colorPanelType, item.color_panel_value);
+  const mainVariantMedium = getProductImage(
+    {
+      image: item.main_image,
+      image_variants: item.main_image_variants,
+    },
+    'medium'
+  );
+  const secondaryVariantMedium = getProductImage(
+    {
+      image: item.secondary_image,
+      image_variants: item.secondary_image_variants,
+    },
+    'medium'
+  );
 
   return ({
   id: item.product_variant_id ? String(item.product_variant_id) : String(item.product_id),
@@ -117,7 +132,7 @@ const mapCartItem = (item: CartItemApi): CartItem => {
       ? String(item.product_variant_id)
       : null,
   name: item.product_name,
-  image: item.main_image || item.secondary_image || '',
+  image: mainVariantMedium || secondaryVariantMedium || '',
   price: Number(item.current_price),
   priceAtAdded: Number(item.price_at_added),
   originalPrice: item.price_at_added !== item.current_price ? Number(item.price_at_added) : undefined,

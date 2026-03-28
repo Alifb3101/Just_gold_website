@@ -8,6 +8,13 @@ export interface ApiProductListItem {
   short_description?: string | null;
   product_model_no?: string;
   created_at?: string;
+  image?: string | null;
+  image_variants?: {
+    thumbnail?: string | null;
+    medium?: string | null;
+    large?: string | null;
+    zoom?: string | null;
+  } | null;
   thumbnail?: string | null;
   afterimage?: string | null;
   media?: Array<{ image_url: string; media_type?: string }>;
@@ -15,6 +22,12 @@ export interface ApiProductListItem {
     id: number;
     stock: number;
     main_image: string;
+    main_image_variants?: {
+      thumbnail?: string | null;
+      medium?: string | null;
+      large?: string | null;
+      zoom?: string | null;
+    } | null;
     price: string;
     discount_price: string | null;
   }>;

@@ -6,6 +6,7 @@ import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
 import type { ProductListItem } from '@/app/features/products/product-list.model';
 import { motion } from 'motion/react';
+import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
 
 interface ShopProductCardProps {
   product: ProductListItem & {
@@ -29,8 +30,9 @@ export const ShopProductCard = React.memo(function ShopProductCard({
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [isAdding, setIsAdding] = useState(false);
 
-  const baseImage = product.thumbnailUrl || product.imageUrl;
-  const hoverImage = product.hoverImageUrl || product.alternateImage;
+  const baseImage = getProductImage(product, 'thumbnail');
+  const hoverImage = product.hoverImageUrl || product.alternateImage || getProductImage(product, 'medium');
+  const imageSrcSet = getProductImageSrcSet(product);
   const hasHoverImage = Boolean(hoverImage);
 
   const productId = String(product.id);
@@ -107,6 +109,8 @@ export const ShopProductCard = React.memo(function ShopProductCard({
       <div className="relative aspect-square overflow-hidden bg-[#FAF3E0]">
         <img
           src={baseImage}
+          srcSet={imageSrcSet || undefined}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           alt={product.name}
           loading="lazy"
           decoding="async"

@@ -12,7 +12,19 @@ export type WishlistItemApi = {
   current_price: number;
   stock: number;
   main_image: string | null;
+  main_image_variants?: {
+    thumbnail?: string | null;
+    medium?: string | null;
+    large?: string | null;
+    zoom?: string | null;
+  } | null;
   secondary_image: string | null;
+  secondary_image_variants?: {
+    thumbnail?: string | null;
+    medium?: string | null;
+    large?: string | null;
+    zoom?: string | null;
+  } | null;
   created_at: string;
 };
 
