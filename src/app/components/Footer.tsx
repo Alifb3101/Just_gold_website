@@ -4,6 +4,7 @@ import {
   Facebook,
   Twitter,
   Youtube,
+  Music,
   Mail,
   Phone,
   MapPin,
@@ -30,9 +31,9 @@ export function Footer() {
 
   const socialLinks = [
     { Icon: Instagram, href: "https://www.instagram.com/justgoldcosmetics/", label: "Instagram" },
-    { Icon: Facebook, href: "https://www.facebook.com", label: "Facebook" },
-    { Icon: Twitter, href: "https://www.twitter.com", label: "Twitter" },
-    { Icon: Youtube, href: "https://www.youtube.com", label: "YouTube" },
+    { Icon: Music, href: "https://www.tiktok.com/@justgoldcosmetics", label: "TikTok" },
+    // { Icon: Twitter, href: "https://www.twitter.com", label: "Twitter" },
+    // { Icon: Youtube, href: "https://www.youtube.com", label: "YouTube" },
   ];
 
   return (
@@ -151,29 +152,29 @@ export function Footer() {
             <div className="space-y-4 text-sm text-[#6B6B6B]">
 
               <a
-                href="mailto:hello@justgold.ae"
+                href="mailto:justgoldcosmetic@gmail.com"
                 className="flex gap-3 items-center hover:text-[#D4AF37] transition"
               >
                 <Mail size={16} className="text-[#D4AF37]" />
-                hello@justgold.ae
+                justgoldcosmetic@gmail.com
               </a>
 
               <a
-                href="tel:+971501234567"
+                href="tel:+971505762104"
                 className="flex gap-3 items-center hover:text-[#D4AF37] transition"
               >
                 <Phone size={16} className="text-[#D4AF37]" />
-                +971 50 123 4567
+                +971 50 576 2104
               </a>
 
               <a
-                href="https://maps.google.com/?q=Dubai%20UAE"
+                href="https://maps.app.goo.gl/nHodevUT1nwYzCPB7"
                 target="_blank"
                 rel="noreferrer"
                 className="flex gap-3 items-center hover:text-[#D4AF37] transition"
               >
                 <MapPin size={16} className="text-[#D4AF37]" />
-                Dubai, UAE
+                DOMESTIC PERFUMES CO, Dubai, UAE
               </a>
 
             </div>
@@ -198,13 +199,13 @@ export function Footer() {
             <CreditCard size={20} className="text-[#444]" />
             <Apple size={20} className="text-[#444]" />
 
-            <span className="px-3 py-1 bg-[#2B2B2B] text-white text-xs rounded">
+            {/* <span className="px-3 py-1 bg-[#2B2B2B] text-white text-xs rounded">
               Tabby
             </span>
 
             <span className="px-3 py-1 bg-[#2B2B2B] text-white text-xs rounded">
               Tamara
-            </span>
+            </span> */}
 
           </div>
 

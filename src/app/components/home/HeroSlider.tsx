@@ -10,10 +10,10 @@ interface Slide {
 }
 
 const slides: Slide[] = [
-    { id: 1, image: "https://i.postimg.cc/RCb9mmNc/JG-Mascara-Web-Banner-jpg.jpg" },
-  { id: 2, image: "https://i.postimg.cc/sf0yzzvY/JG_Unique_Single_Blush_Web_Poster_jpg.jpg" },
-  { id: 3, image: "https://i.postimg.cc/66VBWBDJ/JH-ll-jpg.jpg" },
-  { id: 4, image: "https://i.postimg.cc/13TJ6KWH/JG-Skin-Fit-Web-banner-jpg.jpg" },
+    { id: 1, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890031/JG-Mascara_WebBanner.jpg_as4e2u.jpg" },
+  { id: 2, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890032/JG-UniqueSingleBlushWebPoster.jpg_d52vur.jpg" },
+  // { id: 3, image: "https://i.postimg.cc/66VBWBDJ/JH-ll-jpg.jpg" },
+  { id: 3, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890030/JG-SkinFit-Web-banner.jpg_z2tdrr.jpg" },
 ];
 
 export function HeroSlider() {
