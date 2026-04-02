@@ -299,7 +299,7 @@ git push origin main
 node scripts/migrate_reviews.js
 
 # 7. Test production endpoints
-curl https://just-gold-backend-render.onrender.com/api/v1/products/1/reviews
+curl http://localhost:5000/api/v1/products/1/reviews
 ```
 
 ---

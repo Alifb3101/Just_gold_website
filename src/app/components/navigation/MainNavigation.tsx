@@ -627,9 +627,9 @@ export function MainNavigation() {
         {/* ✅ Main Menu Bar (Desktop mega categories) */}
         <nav className="bg-white/90 backdrop-blur border-b border-[#D4AF37]/15 shadow-[0_10px_30px_rgba(0,0,0,0.08)] hidden lg:block">
           <div className="max-w-[1920px] mx-auto px-3 sm:px-6 lg:px-10">
-            <div className="md:h-[65px] lg:h-[60px] xl:h-[85px] h-[85px] flex items-center justify-center">
+            <div className="md:h-[65px] lg:h-[60px] xl:h-[85px] h-[85px] [@media(min-width:1320px)_and_(max-width:1500px)]:h-[66px] flex items-center justify-center">
               {/* Desktop Menu Items */}
-              <div className="hidden lg:flex items-center gap-6 md:gap-7 lg:gap-5 xl:gap-12">
+              <div className="hidden lg:flex items-center gap-6 md:gap-7 lg:gap-5 xl:gap-12 [@media(min-width:1320px)_and_(max-width:1500px)]:gap-7">
                 {status === 'loading' && menuItems.length === 0 ? (
                   <div className="flex gap-4">
                     {Array.from({ length: 5 }).map((_, idx) => (
@@ -679,8 +679,9 @@ export function MainNavigation() {
                         className={`
                           relative flex items-center gap-1
                           font-bold tracking-wide md:text-sm lg:text-sm xl:text-lg
+                          [@media(min-width:1320px)_and_(max-width:1500px)]:text-[0.86rem]
                           transition
-                          py-3.5
+                          py-3.5 [@media(min-width:1320px)_and_(max-width:1500px)]:py-2.5
                           group
                           ${isActive ? "text-[#D4AF37]" : "text-[#3E2723] hover:text-[#D4AF37]"}
                         `}
@@ -690,7 +691,7 @@ export function MainNavigation() {
                         </span>
 
                         {item.subcategories && item.subcategories.length > 0 && (
-                          <ChevronDown className="w-4 h-4 opacity-80" />
+                          <ChevronDown className="w-4 h-4 opacity-80 [@media(min-width:1320px)_and_(max-width:1500px)]:w-3.5 [@media(min-width:1320px)_and_(max-width:1500px)]:h-3.5" />
                         )}
 
                         {/* Crazy underline */}

@@ -5,7 +5,7 @@
  */
 
 const SITE_URL = process.env.VITE_SITE_URL || 'https://luxurycosmetics.com';
-const API_BASE_URL = process.env.VITE_API_BASE_URL || 'https://just-gold-backend-render.onrender.com';
+const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 interface SitemapUrl {
   loc: string;

@@ -28,6 +28,17 @@ const DEFAULT_FILTERS: ProductFilters = {
 };
 
 const VALID_SORTS: ProductSort[] = ['newest', 'popular', 'price_low', 'price_high'];
+const DEFAULT_SHOP_BANNER_IMAGE_URL = 'https://i.postimg.cc/15KwN1qM/Glass-Skin.jpg';
+
+// Add category-level banner URLs here (key = parent category id)
+const SHOP_BANNER_BY_PARENT_CATEGORY_ID: Record<number, string> = {
+  // 5: 'https://your-cdn.com/eyes-parent-banner.jpg',
+};
+
+// Add subcategory-level banner URLs here (key = subcategory id)
+const SHOP_BANNER_BY_SUBCATEGORY_ID: Record<number, string> = {
+  // 12: 'https://your-cdn.com/eyeliner-sub-banner.jpg',
+};
 
 function serializeFilters(filters: ProductFilters) {
   return {
@@ -141,7 +152,7 @@ export function ProductPage() {
   // SEO data generation
   const currentCategory = useMemo(() => {
     if (!filters.category) return null;
-    const categoryId = parseInt(filters.category, 10);
+    const categoryId = parseInt(String(filters.category), 10);
     for (const cat of categories) {
       if (cat.id === categoryId) return { parent: cat, sub: null };
       const sub = cat.subcategories?.find((s) => s.id === categoryId);
@@ -188,6 +199,26 @@ export function ProductPage() {
     return items;
   }, [currentCategory]);
 
+  const currentBannerImageUrl = useMemo(() => {
+    if (currentCategory?.sub?.id && SHOP_BANNER_BY_SUBCATEGORY_ID[currentCategory.sub.id]) {
+      return SHOP_BANNER_BY_SUBCATEGORY_ID[currentCategory.sub.id];
+    }
+
+    if (currentCategory?.parent?.id && SHOP_BANNER_BY_PARENT_CATEGORY_ID[currentCategory.parent.id]) {
+      return SHOP_BANNER_BY_PARENT_CATEGORY_ID[currentCategory.parent.id];
+    }
+
+    const selectedCategoryId = filters.category ? Number(filters.category) : null;
+    if (selectedCategoryId && SHOP_BANNER_BY_SUBCATEGORY_ID[selectedCategoryId]) {
+      return SHOP_BANNER_BY_SUBCATEGORY_ID[selectedCategoryId];
+    }
+    if (selectedCategoryId && SHOP_BANNER_BY_PARENT_CATEGORY_ID[selectedCategoryId]) {
+      return SHOP_BANNER_BY_PARENT_CATEGORY_ID[selectedCategoryId];
+    }
+
+    return DEFAULT_SHOP_BANNER_IMAGE_URL;
+  }, [filters.category, currentCategory]);
+
   return (
     <div className="min-h-screen bg-[#FFF9F0]">
       {/* SEO Meta Tags */}
@@ -213,6 +244,43 @@ export function ProductPage() {
         />
       )}
       <BreadcrumbSchema items={breadcrumbItems} />
+
+      <section className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-6">
+        <div
+          className="relative overflow-hidden rounded-2xl md:rounded-3xl border border-[#EADBC2] shadow-[0_18px_44px_rgba(62,39,35,0.14)]"
+          style={{ aspectRatio: '3196 / 525' }}
+        >
+          {currentBannerImageUrl ? (
+            <img
+              src={currentBannerImageUrl}
+              alt="Shop banner"
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1920px"
+              {...({ fetchpriority: 'high' } as Record<string, string>)}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,#2A1B14_0%,#563326_32%,#C39A56_70%,#F9E8C8_100%)]" />
+          )}
+          <div className="absolute inset-0 bg-[linear-gradient(96deg,rgba(26,17,12,0.2)_0%,rgba(26,17,12,0.08)_38%,rgba(255,244,223,0)_72%)]" />
+
+          <div className="relative z-10 flex h-full items-center justify-between px-4 sm:px-7 lg:px-12 gap-3">
+            <div className="max-w-[75%] sm:max-w-[68%]">
+              <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.2em] text-[#FFF7E8] font-semibold mb-1 sm:mb-2">
+                Explore Our Premium products
+              </p>
+              <h1 className="text-white font-black text-base sm:text-2xl md:text-3xl lg:text-4xl leading-[1.06] drop-shadow-[0_1px_4px_rgba(0,0,0,0.22)] line-clamp-2">
+                {currentCategory?.sub?.name || currentCategory?.parent?.name || 'Shop Premium Cosmetics'}
+              </h1>
+
+            </div>
+            <div className="shrink-0 text-right">
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block flex-shrink-0 w-[280px]">

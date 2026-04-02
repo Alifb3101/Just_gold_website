@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const proxyTarget = env.VITE_PROXY_TARGET || 'https://just-gold-backend-render.onrender.com'
+  const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:5000'
 
   return {
   plugins: [

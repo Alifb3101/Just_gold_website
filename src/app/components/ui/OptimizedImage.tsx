@@ -213,7 +213,7 @@ export function OptimizedImage({
         height={height}
         loading={priority ? 'eager' : 'lazy'}
         decoding={priority ? 'sync' : 'async'}
-        fetchPriority={priority ? 'high' : 'auto'}
+        {...({ fetchpriority: priority ? 'high' : 'auto' } as Record<string, string>)}
         onLoad={handleLoad}
         onError={handleError}
         style={{

@@ -218,6 +218,7 @@ export function ProductDetailsPage() {
     ? Math.max(0, Math.round((1 - (selectedShadeData.discountPrice / selectedShadeData.price)) * 100))
     : 0;
   const isOutOfStock = maxStock === 0;
+  const isLowStock = maxStock > 0 && maxStock <= 3;
   const wishlistVariantId = selectedShadeData?.id || selectedShade || null;
   const isWishlisted = product ? isInWishlist(String(product.id), wishlistVariantId) : false;
 
@@ -831,8 +832,10 @@ export function ProductDetailsPage() {
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  {maxStock > 0 && (
-                    <span className="ml-3 text-xs text-gray-500">Max {maxStock} available</span>
+                  {isLowStock && (
+                    <span className={`ml-3 text-xs ${isLowStock ? 'text-orange-600 font-semibold' : 'text-gray-500'}`}>
+                      {isLowStock ? `Hurry up! Only ${maxStock} stock available` : `Max ${maxStock} available`}
+                    </span>
                   )}
                 </div>
               </div>
@@ -881,11 +884,11 @@ export function ProductDetailsPage() {
                     <span className="review-meta font-semibold text-red-600">-{discountPercent}%</span>
                   </div>
                 )}
-                {maxStock > 0 ? (
-                  <span className="review-meta text-green-600 font-semibold">In stock: {maxStock}</span>
-                ) : (
+                {isOutOfStock ? (
                   <span className="review-meta text-red-600 font-semibold">Out of stock</span>
-                )}
+                ) : isLowStock ? (
+                  <span className="review-meta text-orange-600 font-semibold">Hurry up! Only {maxStock} stock available</span>
+                ) : null}
               </div>
 
               {/* Shade Selection */}
@@ -972,19 +975,14 @@ export function ProductDetailsPage() {
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  {maxStock > 0 && (
-                    <span className="text-sm text-gray-500">Max {maxStock} available</span>
-                  )}
+
                 </div>
               </div>
 
               {/* Stock Status - Desktop Only */}
               <div>
-                {maxStock > 0 ? (
-                  <p className="text-green-600 font-semibold">✓ In Stock ({maxStock} available)</p>
-                ) : (
-                  <p className="text-red-600 font-semibold">Out of Stock</p>
-                )}
+                {isOutOfStock ? <p className="text-red-600 font-semibold">Out of Stock</p> : null}
+                {isLowStock ? <p className="text-orange-600 font-semibold">Hurry up! Only {maxStock} stock available</p> : null}
               </div>
 
               {/* CTA - Desktop */}

@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://just-gold-backend-render.onrender.com/api/v1/:path*"
+      "destination": "http://localhost:5000/api/v1/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://just-gold-backend-render.onrender.com/uploads/:path*"
+      "destination": "http://localhost:5000/uploads/:path*"
     },
     {
       "source": "/((?!api|_next|static|sitemap.xml|robots.txt|favicon.ico|.*\\..*).*)",
