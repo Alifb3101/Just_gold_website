@@ -7,7 +7,7 @@ interface ReviewsProps {
   productId: number;
 }
 
-const Stars = ({ rating }: { rating: number }) => (
+const Stars = React.memo(({ rating }: { rating: number }) => (
   <div className="flex gap-0.5">
     {Array.from({ length: 5 }).map((_, i) => (
       <Star
@@ -17,12 +17,14 @@ const Stars = ({ rating }: { rating: number }) => (
       />
     ))}
   </div>
-);
+));
 
-const ReviewCard: React.FC<{ review: Review; onHelpful: (reviewId: number, type: 'helpful' | 'unhelpful') => void }> = ({
+Stars.displayName = 'Stars';
+
+const ReviewCard = React.memo(function ReviewCard({
   review,
   onHelpful,
-}) => {
+}: { review: Review; onHelpful: (reviewId: number, type: 'helpful' | 'unhelpful') => void }) {
   const [isMarkingHelpful, setIsMarkingHelpful] = useState(false);
 
   const handleMarkHelpful = async (type: 'helpful' | 'unhelpful', e: React.MouseEvent) => {
@@ -68,6 +70,8 @@ const ReviewCard: React.FC<{ review: Review; onHelpful: (reviewId: number, type:
               src={img.cloudinary_url}
               alt="Review"
               className="w-20 h-20 object-cover rounded border border-gray-200 flex-shrink-0"
+              loading="lazy"
+              decoding="async"
             />
           ))}
         </div>
@@ -94,7 +98,9 @@ const ReviewCard: React.FC<{ review: Review; onHelpful: (reviewId: number, type:
       </div>
     </div>
   );
-};
+});
+
+ReviewCard.displayName = 'ReviewCard';
 
 const RatingDistribution = ({ stats }: { stats: ReviewsResponse['data']['stats'] }) => {
   if (!stats?.rating_distribution || Object.keys(stats.rating_distribution).length === 0) {
@@ -443,6 +449,8 @@ const AddReviewForm: React.FC<AddReviewFormProps> = ({ productId, onSuccess, onC
                   src={URL.createObjectURL(img)}
                   alt="preview"
                   className="w-20 h-20 object-cover rounded"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <button
                   type="button"

@@ -32,6 +32,16 @@ type ShadeSwatchProps = {
   onSelect: (shadeId: string) => void;
 };
 
+type ProductMainMediaProps = {
+  image: ProductImage | null | undefined;
+  detailType: 'medium' | 'large';
+  sizes: string;
+  objectClassName: 'object-cover' | 'object-contain';
+  videoAutoPlay?: boolean;
+  videoLoop?: boolean;
+  videoMuted?: boolean;
+};
+
 const ShadeSwatch = React.memo(function ShadeSwatch({ shade, isSelected, size, onSelect }: ShadeSwatchProps) {
   const dimensionClass = size === 'sm' ? 'w-11 h-11' : 'w-[3.25rem] h-[3.25rem]';
   const paddingClass = size === 'sm' ? 'p-[2px]' : 'p-[3px]';
@@ -73,6 +83,83 @@ const ShadeSwatch = React.memo(function ShadeSwatch({ shade, isSelected, size, o
 });
 ShadeSwatch.displayName = 'ShadeSwatch';
 
+const ProductMainMedia = React.memo(function ProductMainMedia({
+  image,
+  detailType,
+  sizes,
+  objectClassName,
+  videoAutoPlay = false,
+  videoLoop = false,
+  videoMuted = false,
+}: ProductMainMediaProps) {
+  const thumbnailSrc = useMemo(() => {
+    if (!image) return '';
+    if (image.type === 'video') {
+      return (
+        image.thumbnail ||
+        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"%3E%3Crect width="120" height="120" rx="16" fill="%23F1E8DA"/%3E%3Cpolygon points="48,35 88,60 48,85" fill="%23D4AF37"/%3E%3C/svg%3E'
+      );
+    }
+    return getProductImage(image, 'thumbnail') || image.url;
+  }, [image]);
+
+  const detailSrc = useMemo(() => {
+    if (!image) return '';
+    return getProductImage(image, detailType) || image.url;
+  }, [image, detailType]);
+
+  const detailSrcSet = useMemo(() => {
+    if (!image || image.type === 'video') return undefined;
+    return getProductImageSrcSet(image);
+  }, [image]);
+
+  const zoomSrc = useMemo(() => {
+    if (!image || image.type === 'video') return undefined;
+    return getProductImage(image, 'zoom') || undefined;
+  }, [image]);
+
+  if (!image) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
+        No media available
+      </div>
+    );
+  }
+
+  if (image.type === 'video') {
+    return (
+      <video
+        key={image.id}
+        controls
+        playsInline
+        autoPlay={videoAutoPlay}
+        loop={videoLoop}
+        muted={videoMuted}
+        className={`w-full h-full ${objectClassName}`}
+        preload="metadata"
+        poster={thumbnailSrc}
+      >
+        <source src={image.url} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    );
+  }
+
+  return (
+    <img
+      src={detailSrc}
+      srcSet={detailSrcSet}
+      sizes={sizes}
+      data-zoom-src={zoomSrc}
+      alt={image.alt}
+      className={`w-full h-full ${objectClassName}`}
+      loading="eager"
+      decoding="async"
+    />
+  );
+});
+ProductMainMedia.displayName = 'ProductMainMedia';
+
 // ============================================
 // 📦 MAIN COMPONENT
 // ============================================
@@ -96,6 +183,7 @@ export function ProductDetailsPage() {
   const [selectedFinishType, setSelectedFinishType] = useState('matte');
   const selectedShadeRef = useRef('');
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const preloadedVariantImagesRef = useRef<Set<string>>(new Set());
 
   const { productId, slug } = useMemo(() => {
     const raw = productSlug ?? '';
@@ -226,6 +314,52 @@ export function ProductDetailsPage() {
     if (!product) return [];
     return product.images.filter((img) => !img.variantId);
   }, [product]);
+
+  const variantPreloadUrls = useMemo(() => {
+    if (!product) return [];
+
+    const urls = new Set<string>();
+    const addUrl = (value?: string | null) => {
+      const normalized = value?.trim();
+      if (normalized) urls.add(normalized);
+    };
+
+    const addSourceVariants = (source?: { image?: string | null; image_variants?: ProductImage['image_variants'] | ProductShade['imageVariants'] | ProductShade['secondaryImageVariants'] | null } | null) => {
+      if (!source) return;
+      addUrl(getProductImage(source, 'thumbnail'));
+      addUrl(getProductImage(source, 'medium'));
+      addUrl(getProductImage(source, 'large'));
+      addUrl(getProductImage(source, 'zoom'));
+      addUrl(source.image);
+    };
+
+    product.images.forEach((image) => {
+      if (image.type !== 'image') return;
+      addSourceVariants(image);
+      addUrl(image.url);
+    });
+
+    productVariants.forEach((variant) => {
+      addSourceVariants({ image: variant.imageUrl, image_variants: variant.imageVariants });
+      addSourceVariants({ image: variant.secondaryImageUrl, image_variants: variant.secondaryImageVariants });
+    });
+
+    return Array.from(urls);
+  }, [product, productVariants]);
+
+  useEffect(() => {
+    if (!variantPreloadUrls.length) return;
+
+    const cache = preloadedVariantImagesRef.current;
+
+    variantPreloadUrls.forEach((url) => {
+      if (cache.has(url)) return;
+      cache.add(url);
+      const preloadedImage = new Image();
+      preloadedImage.decoding = 'async';
+      preloadedImage.src = url;
+    });
+  }, [variantPreloadUrls]);
 
   const gallery: ProductImage[] = useMemo(() => {
     const ordered = [variantMedia[0], variantMedia[1], ...baseMedia];
@@ -430,11 +564,13 @@ export function ProductDetailsPage() {
       if (!product || shadeId === selectedShadeRef.current) return;
 
       const variantImages = product.images.filter((image) => image.variantId === shadeId);
+      const nextPrimary = variantImages[0] ?? null;
+      const nextSecondary = variantImages[1] ?? null;
       selectedShadeRef.current = shadeId;
       setSelectedShade(shadeId);
-      setVariantMedia([variantImages[0] ?? null, variantImages[1] ?? null]);
-      setSelectedImage(0);
-      setQuantity(1);
+      setVariantMedia((prev) => (prev[0] === nextPrimary && prev[1] === nextSecondary ? prev : [nextPrimary, nextSecondary]));
+      setSelectedImage((prev) => (prev === 0 ? prev : 0));
+      setQuantity((prev) => (prev === 1 ? prev : 1));
     },
     [product]
   );
@@ -657,36 +793,12 @@ export function ProductDetailsPage() {
                 onMouseUp={(e) => handleSwipeEnd(e.clientX, e.clientY)}
               >
                 <div className="tablet-landscape-gallery">
-                {currentImage ? (
-                  currentImage.type === 'video' ? (
-                    <video
-                      key={currentImage.id}
-                      controls
-                      playsInline
-                      className="w-full h-full object-contain"
-                      preload="metadata"
-                      poster={getThumbnailSrc(currentImage)}
-                    >
-                      <source src={currentImage.url} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                    <img
-                      src={getDetailImageSrc(currentImage, 'medium')}
-                      srcSet={getDetailImageSrcSet(currentImage)}
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      data-zoom-src={getDetailImageSrc(currentImage, 'zoom') || undefined}
-                      alt={currentImage.alt}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                    No media available
-                  </div>
-                )}
+                <ProductMainMedia
+                  image={currentImage}
+                  detailType="medium"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  objectClassName="object-cover"
+                />
                 </div>
               </div>
 
@@ -1063,37 +1175,15 @@ export function ProductDetailsPage() {
                 onMouseDown={(e) => handleSwipeStart(e.clientX, e.clientY)}
                 onMouseUp={(e) => handleSwipeEnd(e.clientX, e.clientY)}
               >
-                {currentImage ? (
-                  currentImage.type === 'video' ? (
-                    <video
-                      key={currentImage.id}
-                      controls
-                      autoPlay
-                      loop
-                      muted
-                      className="w-full h-full object-contain"
-                      poster={getThumbnailSrc(currentImage)}
-                    >
-                      <source src={currentImage.url} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                    <img
-                      src={getDetailImageSrc(currentImage, 'medium')}
-                      srcSet={getDetailImageSrcSet(currentImage)}
-                      sizes="50vw"
-                      data-zoom-src={getDetailImageSrc(currentImage, 'zoom') || undefined}
-                      alt={currentImage.alt}
-                      className="w-full h-full object-contain"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  )
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                    No media available
-                  </div>
-                )}
+                <ProductMainMedia
+                  image={currentImage}
+                  detailType="medium"
+                  sizes="50vw"
+                  objectClassName="object-contain"
+                  videoAutoPlay
+                  videoLoop
+                  videoMuted
+                />
               </div>
             </div>
 
@@ -1111,37 +1201,15 @@ export function ProductDetailsPage() {
                 onMouseDown={(e) => handleSwipeStart(e.clientX, e.clientY)}
                 onMouseUp={(e) => handleSwipeEnd(e.clientX, e.clientY)}
               >
-                {currentImage ? (
-                  currentImage.type === 'video' ? (
-                    <video
-                      key={currentImage.id}
-                      controls
-                      autoPlay
-                      loop
-                      muted
-                      className="w-full h-full object-contain"
-                      poster={currentImage.thumbnail}
-                    >
-                      <source src={currentImage.url} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                        <img
-                          src={getDetailImageSrc(currentImage, 'large')}
-                          srcSet={getDetailImageSrcSet(currentImage)}
-                          sizes="50vw"
-                          data-zoom-src={getDetailImageSrc(currentImage, 'zoom') || undefined}
-                          alt={currentImage.alt}
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                  )
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                    No media available
-                  </div>
-                )}
+                <ProductMainMedia
+                  image={currentImage}
+                  detailType="large"
+                  sizes="50vw"
+                  objectClassName="object-contain"
+                  videoAutoPlay
+                  videoLoop
+                  videoMuted
+                />
               </div>
 
               {/* Horizontal Thumbnail Gallery Below Main Image */}

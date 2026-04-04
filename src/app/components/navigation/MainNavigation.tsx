@@ -27,6 +27,8 @@ import StorePortal from "../home/store_reveal";
 const LOGO_URL =
   "https://i.postimg.cc/PqTfCmLW/Whats-App-Image-2026-02-03-at-12-22-57-PM-Nero-AI-Background-Remover-transparent.png";
 
+const SEARCH_HINT_WORDS = ['face', 'eye', 'lips', 'tools', 'makeup kit', 'nails'];
+
 export function MainNavigation() {
   const { isRTL, currency, setCurrency } = useApp();
   const { isAuthenticated } = useAuth();
@@ -48,6 +50,9 @@ export function MainNavigation() {
   // ✅ Search
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [searchHintWordIndex, setSearchHintWordIndex] = useState(0);
+  const [searchHintText, setSearchHintText] = useState("");
+  const [isHintDeleting, setIsHintDeleting] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ name: string; slug: string; thumbnail?: string | null }>>([]);
   const [trending, setTrending] = useState<Array<{ query: string; search_count: number }>>([]);
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
@@ -57,6 +62,7 @@ export function MainNavigation() {
   const suggestionNavigateAbortRef = useRef<AbortController | null>(null);
   const trendingLoadedRef = useRef(false);
   const debounceRef = useRef<number | null>(null);
+  const searchHintTimerRef = useRef<number | null>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
 
   // ✅ HEADER FULL HEIGHT
@@ -101,6 +107,40 @@ export function MainNavigation() {
   useEffect(() => {
     setSearchQuery(searchParam);
   }, [searchParam]);
+
+  useEffect(() => {
+    const currentWord = SEARCH_HINT_WORDS[searchHintWordIndex];
+
+    searchHintTimerRef.current = window.setTimeout(() => {
+      if (!isHintDeleting && searchHintText === currentWord) {
+        setIsHintDeleting(true);
+        return;
+      }
+
+      if (isHintDeleting && searchHintText === "") {
+        setIsHintDeleting(false);
+        setSearchHintWordIndex((current) => (current + 1) % SEARCH_HINT_WORDS.length);
+        return;
+      }
+
+      setSearchHintText((currentText) => {
+        if (!isHintDeleting) {
+          return currentWord.slice(0, currentText.length + 1);
+        }
+
+        return currentWord.slice(0, Math.max(0, currentText.length - 1));
+      });
+    }, isHintDeleting && searchHintText === currentWord ? 1400 : isHintDeleting ? 95 : 170);
+
+    return () => {
+      if (searchHintTimerRef.current) {
+        window.clearTimeout(searchHintTimerRef.current);
+        searchHintTimerRef.current = null;
+      }
+    };
+  }, [searchHintWordIndex, searchHintText, isHintDeleting]);
+
+  const searchHintLabel = searchHintText;
 
   // ✅ Hide nav when scrolling down, show when scrolling up or near top
   useEffect(() => {
@@ -279,7 +319,6 @@ export function MainNavigation() {
   `;
 
   const mobilePopupTop = Math.max(headerHeight + 8, 64);
-
   return (
     <>
       {/* ✅ CRAZY PREMIUM HEADER WRAP */}
@@ -330,7 +369,7 @@ export function MainNavigation() {
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-7 h-7 text-[#D4AF37]" />
                     <input
                       type="text"
-                      placeholder="Search luxury beauty..."
+                      placeholder={`Search for ${searchHintLabel}`}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={handleFocus}
@@ -382,7 +421,7 @@ export function MainNavigation() {
                                     onClick={() => handleSuggestionClick(item.slug)}
                                   >
                                     {item.thumbnail ? (
-                                      <img src={item.thumbnail} alt={item.name} className="w-12 h-12 rounded object-cover" />
+                                      <img src={item.thumbnail} alt={item.name} className="w-12 h-12 rounded object-cover" loading="lazy" decoding="async" />
                                     ) : (
                                       <div className="w-12 h-12 rounded bg-[#D4AF37]/15" />
                                     )}
@@ -535,7 +574,7 @@ export function MainNavigation() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D4AF37]" />
                   <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder={`Search for ${searchHintLabel}`}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={handleFocus}
@@ -585,7 +624,7 @@ export function MainNavigation() {
                                   onClick={() => handleSuggestionClick(item.slug)}
                                 >
                                   {item.thumbnail ? (
-                                    <img src={item.thumbnail} alt={item.name} className="w-10 h-10 rounded object-cover" />
+                                    <img src={item.thumbnail} alt={item.name} className="w-10 h-10 rounded object-cover" loading="lazy" decoding="async" />
                                   ) : (
                                     <div className="w-10 h-10 rounded bg-[#D4AF37]/15" />
                                   )}
@@ -777,7 +816,7 @@ export function MainNavigation() {
                         onClick={() => handleSuggestionClick(item.slug)}
                       >
                         {item.thumbnail ? (
-                          <img src={item.thumbnail} alt={item.name} className="w-12 h-12 rounded object-cover" />
+                          <img src={item.thumbnail} alt={item.name} className="w-12 h-12 rounded object-cover" loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-12 h-12 rounded bg-[#D4AF37]/15" />
                         )}

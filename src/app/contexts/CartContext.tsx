@@ -155,6 +155,8 @@ const mapCartItem = (item: CartItemApi): CartItem => {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { token, guestToken, logout } = useAuth();
+  const quantitySyncTimersRef = React.useRef<Record<string, number>>({});
+  const pendingQuantityRef = React.useRef<Record<string, number>>({});
   const [items, setItems] = useState<CartItem[]>([]);
   const [totals, setTotals] = useState<CartTotals>({
     subtotal: 0,
@@ -170,6 +172,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  const clearQuantitySyncTimer = useCallback((variantId: string) => {
+    const timer = quantitySyncTimersRef.current[variantId];
+    if (timer) {
+      window.clearTimeout(timer);
+      delete quantitySyncTimersRef.current[variantId];
+    }
+    delete pendingQuantityRef.current[variantId];
+  }, []);
 
   const syncFromResponse = useCallback((data?: Partial<CartResponse> | null) => {
     console.debug('[cart] syncFromResponse.input', {
@@ -324,6 +335,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
 
   const removeFromCart = useCallback(async (variantId: string) => {
+    clearQuantitySyncTimer(variantId);
     try {
       const data = await apiRemoveFromCart(token, variantId, undefined, guestToken);
       const updated = syncFromResponse(data);
@@ -334,9 +346,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       handleApiError(err, 'Remove from cart');
     }
-  }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh, clearQuantitySyncTimer]);
 
   const clearCart = useCallback(async () => {
+    Object.keys(quantitySyncTimersRef.current).forEach((variantId) => clearQuantitySyncTimer(variantId));
     const variants = items.map((item) => item.id);
     for (const id of variants) {
       try {
@@ -351,9 +364,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         break;
       }
     }
-  }, [token, guestToken, items, syncFromResponse, handleApiError, refresh]);
+  }, [token, guestToken, items, syncFromResponse, handleApiError, refresh, clearQuantitySyncTimer]);
 
   const clearCartLocal = useCallback(() => {
+    Object.keys(quantitySyncTimersRef.current).forEach((variantId) => clearQuantitySyncTimer(variantId));
     setItems([]);
     setTotals({
       subtotal: 0,
@@ -367,7 +381,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     setPromoCode(null);
     setCoupon(null);
-  }, []);
+  }, [clearQuantitySyncTimer]);
 
   const applyPromoCode = useCallback(
     async (code: string): Promise<boolean> => {
@@ -402,17 +416,73 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateQuantity = useCallback(async (variantId: string, quantity: number) => {
-    try {
-      const data = await apiUpdateQuantity(token, variantId, quantity, undefined, guestToken);
-      const updated = syncFromResponse(data);
-      if (!updated) {
-        await refresh();
-      }
-      // Backend auto-persists coupon, no need to re-apply
-    } catch (err) {
-      handleApiError(err, 'Update quantity');
+    const nextQuantity = Number.isFinite(quantity) ? Math.max(1, Math.floor(quantity)) : 1;
+    const existingItem = items.find((item) => item.id === variantId);
+    if (!existingItem) return;
+
+    if (existingItem.quantity !== nextQuantity) {
+      const quantityDelta = nextQuantity - existingItem.quantity;
+      const priceBase = Number(existingItem.price) || 0;
+      const subtotalDelta = priceBase * quantityDelta;
+
+      setItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === variantId
+            ? {
+                ...item,
+                quantity: nextQuantity,
+                subtotal: Number((priceBase * nextQuantity).toFixed(2)),
+              }
+            : item
+        )
+      );
+
+      setTotals((prevTotals) => {
+        const nextSubtotal = Number((prevTotals.subtotal + subtotalDelta).toFixed(2));
+        const nextItems = Math.max(0, prevTotals.items + quantityDelta);
+        const nextTotal = Number((nextSubtotal + prevTotals.shipping - prevTotals.discount).toFixed(2));
+
+        return {
+          ...prevTotals,
+          subtotal: nextSubtotal,
+          items: nextItems,
+          total: nextTotal,
+        };
+      });
     }
-  }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
+
+    pendingQuantityRef.current[variantId] = nextQuantity;
+    const pendingTimer = quantitySyncTimersRef.current[variantId];
+    if (pendingTimer) window.clearTimeout(pendingTimer);
+
+    quantitySyncTimersRef.current[variantId] = window.setTimeout(async () => {
+      const queuedQuantity = pendingQuantityRef.current[variantId];
+      delete quantitySyncTimersRef.current[variantId];
+      delete pendingQuantityRef.current[variantId];
+      if (queuedQuantity === undefined) return;
+
+      try {
+        const data = await apiUpdateQuantity(token, variantId, queuedQuantity, undefined, guestToken);
+        const updated = syncFromResponse(data);
+        if (!updated) {
+          await refresh();
+        }
+      } catch (err) {
+        await refresh();
+        handleApiError(err, 'Update quantity');
+      }
+    }, 350);
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh, items]);
+
+  useEffect(() => {
+    return () => {
+      Object.keys(quantitySyncTimersRef.current).forEach((variantId) => {
+        window.clearTimeout(quantitySyncTimersRef.current[variantId]);
+      });
+      quantitySyncTimersRef.current = {};
+      pendingQuantityRef.current = {};
+    };
+  }, []);
 
   const cartCount = useMemo(
     () => totals.items ?? items.reduce((sum, item) => sum + item.quantity, 0),

@@ -28,7 +28,7 @@ const DEFAULT_FILTERS: ProductFilters = {
 };
 
 const VALID_SORTS: ProductSort[] = ['newest', 'popular', 'price_low', 'price_high'];
-const DEFAULT_SHOP_BANNER_IMAGE_URL = 'https://i.postimg.cc/15KwN1qM/Glass-Skin.jpg';
+const DEFAULT_SHOP_BANNER_IMAGE_URL = 'https://i.postimg.cc/yYTcSCZj/Liquid-Highlighter.jpg';
 
 // Add category-level banner URLs here (key = parent category id)
 const SHOP_BANNER_BY_PARENT_CATEGORY_ID: Record<number, string> = {
@@ -245,32 +245,33 @@ export function ProductPage() {
       )}
       <BreadcrumbSchema items={breadcrumbItems} />
 
-      <section className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-6">
+      <section className="hidden md:block max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-6">
         <div
-          className="relative overflow-hidden rounded-2xl md:rounded-3xl border border-[#EADBC2] shadow-[0_18px_44px_rgba(62,39,35,0.14)]"
-          style={{ aspectRatio: '3196 / 525' }}
+          className="relative overflow-hidden rounded-2xl md:rounded-3xl border border-[#EADBC2] shadow-[0_18px_44px_rgba(62,39,35,0.14)] aspect-[5/1] min-h-[96px] sm:aspect-[11/2] sm:min-h-[112px] md:aspect-[6/1] md:min-h-[128px] lg:aspect-[3196/525] lg:min-h-0"
         >
           {currentBannerImageUrl ? (
-            <img
-              src={currentBannerImageUrl}
-              alt="Shop banner"
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="eager"
-              decoding="async"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1920px"
-              {...({ fetchpriority: 'high' } as Record<string, string>)}
-            />
+            <div className="absolute inset-0 flex items-center justify-center px-3 sm:px-4 md:px-5 lg:px-0">
+              <img
+                src={currentBannerImageUrl}
+                alt="Shop banner"
+                className="h-full w-auto max-w-[88%] sm:max-w-[90%] md:max-w-[92%] lg:max-w-none object-contain lg:object-cover object-center"
+                loading="eager"
+                decoding="async"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1920px"
+                {...({ fetchpriority: 'high' } as Record<string, string>)}
+              />
+            </div>
           ) : (
             <div className="absolute inset-0 bg-[linear-gradient(120deg,#2A1B14_0%,#563326_32%,#C39A56_70%,#F9E8C8_100%)]" />
           )}
-          <div className="absolute inset-0 bg-[linear-gradient(96deg,rgba(26,17,12,0.2)_0%,rgba(26,17,12,0.08)_38%,rgba(255,244,223,0)_72%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(96deg,rgba(26,17,12,0.12)_0%,rgba(26,17,12,0.06)_42%,rgba(255,244,223,0)_76%)] lg:bg-[linear-gradient(96deg,rgba(26,17,12,0.26)_0%,rgba(26,17,12,0.12)_42%,rgba(255,244,223,0)_76%)]" />
 
-          <div className="relative z-10 flex h-full items-center justify-between px-4 sm:px-7 lg:px-12 gap-3">
-            <div className="max-w-[75%] sm:max-w-[68%]">
+          <div className="relative z-10 hidden lg:flex h-full items-center justify-between px-4 sm:px-6 md:px-7 lg:px-12 gap-3">
+            <div className="max-w-[82%] sm:max-w-[72%]">
               <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.2em] text-[#FFF7E8] font-semibold mb-1 sm:mb-2">
                 Explore Our Premium products
               </p>
-              <h1 className="text-white font-black text-base sm:text-2xl md:text-3xl lg:text-4xl leading-[1.06] drop-shadow-[0_1px_4px_rgba(0,0,0,0.22)] line-clamp-2">
+              <h1 className="text-white font-black text-[17px] sm:text-2xl md:text-3xl lg:text-4xl leading-[1.06] drop-shadow-[0_1px_4px_rgba(0,0,0,0.22)] line-clamp-2">
                 {currentCategory?.sub?.name || currentCategory?.parent?.name || 'Shop Premium Cosmetics'}
               </h1>
 

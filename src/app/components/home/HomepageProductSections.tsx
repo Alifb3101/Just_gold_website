@@ -1,5 +1,5 @@
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Star } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { ProductCard } from '@/app/components/products/ProductCard';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import type { HomepageData, HomepageSectionKey } from '@/services/homepageService';
@@ -26,12 +26,18 @@ const SECTION_META: Array<{
 	},
 ];
 
+// Replace this URL with your custom Deal of the Day badge artwork.
+const DEAL_BADGE_IMAGE_URL = 'https://i.postimg.cc/SQL65yFF/Gemini-Generated-Image-199l6z199l6z199l-removebg-preview.png';
+const dealIntroRuntime = { shown: false };
+
 function ProductSectionSkeleton() {
 	return (
 		<section className="py-16 bg-white">
 			<div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="text-center mb-12">
-					<Skeleton className="h-10 w-72 mx-auto mb-3" />
+					<Skeleton className="h-10 w-72 mx-auto mb-3"
+					
+					/>
 					<Skeleton className="h-4 w-[28rem] max-w-full mx-auto" />
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -51,11 +57,16 @@ function ProductSectionSkeleton() {
 
 export function HomepageProductSections() {
 	const mountedRef = useRef(true);
+	const introTimerRef = useRef<number | null>(null);
+	const lastDealInViewRef = useRef<boolean | null>(null);
 	const [state, setState] = useState<HomepageState>({
 		data: null,
 		isLoading: true,
 		error: null,
 	});
+	const [isDealSectionInView, setIsDealSectionInView] = useState(true);
+	const [isBadgeDismissed, setIsBadgeDismissed] = useState(false);
+	const [showDealIntro, setShowDealIntro] = useState(false);
 
 	const loadHomepage = useCallback(async (showLoader: boolean) => {
 		if (showLoader) {
@@ -115,6 +126,91 @@ export function HomepageProductSections() {
 	}, [dealProduct]);
 
 	const dealProductImageSrcSet = useMemo(() => getProductImageSrcSet(dealProduct), [dealProduct]);
+
+	useEffect(() => {
+		if (!dealProductImage) return;
+		const img = new Image();
+		img.decoding = 'async';
+		img.src = dealProductImage;
+	}, [dealProductImage]);
+
+	useEffect(() => {
+		const img = new Image();
+		img.decoding = 'async';
+		img.src = DEAL_BADGE_IMAGE_URL;
+	}, []);
+
+	const scrollToDealSection = useCallback(() => {
+		const target = document.getElementById('deal-section');
+		if (!target) return;
+		target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}, []);
+
+	useEffect(() => {
+		if (!dealProduct) return;
+
+		const target = document.getElementById('deal-section');
+		if (!target) return;
+
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				const nextInView = entry.isIntersecting;
+				if (lastDealInViewRef.current === nextInView) return;
+				lastDealInViewRef.current = nextInView;
+				setIsDealSectionInView(nextInView);
+			},
+			{
+				root: null,
+				threshold: 0,
+				rootMargin: '0px 0px -20% 0px',
+			}
+		);
+
+		observer.observe(target);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [dealProduct]);
+
+	useEffect(() => {
+		if (isDealSectionInView) {
+			setIsBadgeDismissed(false);
+		}
+	}, [isDealSectionInView]);
+
+	const handleCloseDealBadge = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		event.stopPropagation();
+		setIsBadgeDismissed(true);
+	}, []);
+
+	const handleCloseDealIntro = useCallback(() => {
+		if (introTimerRef.current) {
+			window.clearTimeout(introTimerRef.current);
+			introTimerRef.current = null;
+		}
+		setShowDealIntro(false);
+	}, []);
+
+	useEffect(() => {
+		if (!dealProduct || dealIntroRuntime.shown) return;
+
+		dealIntroRuntime.shown = true;
+		setShowDealIntro(true);
+
+		introTimerRef.current = window.setTimeout(() => {
+			setShowDealIntro(false);
+			introTimerRef.current = null;
+		}, 1250);
+
+		return () => {
+			if (introTimerRef.current) {
+				window.clearTimeout(introTimerRef.current);
+				introTimerRef.current = null;
+			}
+		};
+	}, [dealProduct]);
 
 	if (state.isLoading && !state.data) {
 		return (
@@ -251,6 +347,107 @@ export function HomepageProductSections() {
 					</section>
 				);
 			})}
+
+			{dealProduct && !showDealIntro && !isDealSectionInView && !isBadgeDismissed ? (
+				<div
+					role="button"
+					tabIndex={0}
+					onClick={scrollToDealSection}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter' || event.key === ' ') {
+							event.preventDefault();
+							scrollToDealSection();
+						}
+					}}
+					className="fixed z-[70] h-[82px] w-[82px] sm:h-[96px] sm:w-[96px] md:h-[108px] md:w-[108px] lg:h-[122px] lg:w-[122px] rounded-full border border-[#E7C87C]/80 bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.95),rgba(255,251,239,0.9)_40%,rgba(245,227,184,0.8)_100%)] p-1 sm:p-1.5 md:p-2 shadow-[0_8px_18px_rgba(62,39,35,0.16)] md:shadow-[0_12px_28px_rgba(62,39,35,0.2)] transition-transform duration-300 hover:scale-[1.04] transform-gpu will-change-transform"
+					style={{
+						animation: 'dealBadgeIn 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+						right: 'max(0.75rem, env(safe-area-inset-right))',
+						bottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+					}}
+					aria-label="Deal of the Day shortcut"
+				>
+					<div className="relative h-full w-full overflow-hidden rounded-full border border-[#E5C878]/70 bg-white/70 shadow-[inset_0_1px_10px_rgba(255,255,255,0.55)]">
+						<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.62),rgba(255,255,255,0)_54%)]" />
+						<img
+							src={DEAL_BADGE_IMAGE_URL}
+							alt="Deal of the Day"
+							className="h-full w-full object-cover p-[3px] sm:p-1"
+							loading="eager"
+							decoding="async"
+						/>
+					</div>
+					<button
+						type="button"
+						onClick={handleCloseDealBadge}
+						className="absolute -top-1.5 -right-1 sm:-top-2 sm:-right-1 md:-top-3 md:right-0 h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-full border border-[#E8C978] bg-white shadow-[0_8px_16px_rgba(62,39,35,0.16)] text-[#8A6A45] hover:text-[#3E2723] flex items-center justify-center z-20"
+						aria-label="Close deal badge"
+					>
+						<X className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+					</button>
+				</div>
+			) : null}
+
+			{dealProduct && showDealIntro ? (
+				<div className="fixed inset-0 z-[85] pointer-events-auto">
+					<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(62,39,35,0.08)_0%,rgba(62,39,35,0.03)_44%,rgba(62,39,35,0)_72%)]" />
+					<div className="absolute inset-0 flex items-center justify-center px-3">
+						<div className="w-[min(94vw,620px)] rounded-[30px] border border-[#D4AF37]/38 bg-white/92 text-[#3E2723] shadow-[0_20px_56px_rgba(62,39,35,0.14)] p-2.5 sm:p-4 animate-[dealIntroShow_220ms_ease-out] transform-gpu will-change-transform">
+							<button
+								type="button"
+								onClick={handleCloseDealIntro}
+								className="absolute right-4 top-3 h-8 w-8 rounded-full border border-[#D4AF37]/55 bg-[#FFF5E6] text-[#7A5A35] text-sm hover:bg-[#FDEBCF] hover:text-[#3E2723]"
+								aria-label="Close deal popup"
+							>
+								x
+							</button>
+							<div className="flex items-center gap-2.5 sm:gap-3">
+								<div className="w-[82px] sm:w-[104px] md:w-[118px] aspect-square shrink-0 rounded-2xl overflow-hidden border border-[#D4AF37]/45 shadow-[0_10px_22px_rgba(62,39,35,0.14)]">
+									<img
+										src={dealProductImage}
+										alt={dealProduct.name}
+										className="h-full w-full object-cover"
+										loading="lazy"
+										decoding="async"
+									/>
+								</div>
+								<div className="flex-1 min-w-0 py-1">
+									<p className="text-[10px] uppercase tracking-[0.3em] text-[#8C6A3E] font-semibold">Exclusive Drop</p>
+									<h3 className="mt-1 text-lg sm:text-3xl font-black leading-tight bg-gradient-to-r from-[#3E2723] via-[#D4AF37] to-[#3E2723] bg-clip-text text-transparent">
+										Deal Of The Day
+									</h3>
+									<p className="mt-1 text-xs sm:text-sm text-[#5A4635] line-clamp-1">{dealProduct.name}</p>
+									<div className="mt-3 flex items-end gap-3">
+										<span className="text-lg sm:text-2xl font-bold text-[#3E2723]">AED {dealProduct.price}</span>
+										{dealProduct.originalPrice ? (
+											<span className="text-xs sm:text-sm line-through text-[#9E8764]">AED {dealProduct.originalPrice}</span>
+										) : null}
+									</div>
+									<p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-[#8A6A45]">Pinning shortcut...</p>
+									<div className="mt-2 h-1.5 rounded-full bg-[#EADCC4] overflow-hidden">
+										<span className="block h-full w-full bg-[linear-gradient(90deg,#D4AF37,#F5DA9F,#D4AF37)] animate-[dealProgress_1.2s_linear_forwards]" />
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			) : null}
+
+			<style>{`
+				@keyframes dealBadgeIn {
+					0% { opacity: 0; transform: translateY(10px) scale(0.92); }
+					100% { opacity: 1; transform: translateY(0) scale(1); }
+				}
+				@keyframes dealIntroShow {
+					0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+					100% { opacity: 1; transform: translateY(0) scale(1); }
+				}
+				@keyframes dealProgress {
+					0% { transform: translateX(-100%); }
+					100% { transform: translateX(0%); }
+				}
+			`}</style>
 
 		</div>
 	);

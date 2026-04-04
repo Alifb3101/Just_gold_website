@@ -135,7 +135,7 @@ export function CartPage() {
                         to={productPath}
                         className="block w-20 h-20 md:w-32 md:h-32 rounded-lg border border-[#D4AF37]/30 overflow-hidden bg-[#FAF3E0]"
                       >
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </Link>
                     </div>
 
