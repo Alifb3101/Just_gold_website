@@ -157,6 +157,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { token, guestToken, logout } = useAuth();
   const quantitySyncTimersRef = React.useRef<Record<string, number>>({});
   const pendingQuantityRef = React.useRef<Record<string, number>>({});
+  const inFlightOperationRef = React.useRef<Record<string, Promise<void>>>({});
   const [items, setItems] = useState<CartItem[]>([]);
   const [totals, setTotals] = useState<CartTotals>({
     subtotal: 0,
@@ -180,6 +181,39 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       delete quantitySyncTimersRef.current[variantId];
     }
     delete pendingQuantityRef.current[variantId];
+  }, []);
+
+  const buildItemTotals = useCallback((cartItems: CartItem[]) => {
+    const subtotalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return {
+      subtotal: Number(subtotalAmount.toFixed(2)),
+      items: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+      total: Number((subtotalAmount + totals.shipping - totals.discount).toFixed(2)),
+    };
+  }, [totals.discount, totals.shipping]);
+
+  const applyOptimisticSnapshot = useCallback((nextItems: CartItem[]) => {
+    const nextTotals = buildItemTotals(nextItems);
+    setItems(nextItems);
+    setTotals((prevTotals) => ({
+      ...prevTotals,
+      subtotal: nextTotals.subtotal,
+      items: nextTotals.items,
+      total: nextTotals.total,
+    }));
+  }, [buildItemTotals]);
+
+  const runUniqueCartOperation = useCallback(async (operationKey: string, operation: () => Promise<void>) => {
+    if (inFlightOperationRef.current[operationKey]) {
+      return inFlightOperationRef.current[operationKey];
+    }
+
+    const promise = operation().finally(() => {
+      delete inFlightOperationRef.current[operationKey];
+    });
+
+    inFlightOperationRef.current[operationKey] = promise;
+    return promise;
   }, []);
 
   const syncFromResponse = useCallback((data?: Partial<CartResponse> | null) => {
@@ -288,6 +322,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   ) => {
     const safeQuantity = Number.isFinite(quantity) ? Math.max(1, Math.floor(quantity)) : 1;
+    const cartOperationKey = `add:${productId}:${productVariantId ?? 'no-variant'}`;
+    if (inFlightOperationRef.current[cartOperationKey]) {
+      return inFlightOperationRef.current[cartOperationKey];
+    }
+
     console.debug('[cart] add from context', {
       productId,
       productVariantId,
@@ -296,57 +335,100 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!token,
       hasGuestToken: !!guestToken,
     });
-    try {
-      const data = await apiAddToCart(token, {
-        productId: Number(productId),
-        ...(productVariantId ? { productVariantId: Number(productVariantId) } : {}),
-        ...(safeQuantity ? { quantity: safeQuantity } : {}),
-      }, undefined, guestToken);
-      console.debug('[cart] addToCart.response', {
-        dataType: typeof data,
-        isArray: Array.isArray(data),
-        keys: typeof data === 'object' && data ? Object.keys(data) : [],
-        hasItems: Array.isArray(data?.items),
-        itemCount: data?.items?.length ?? 0,
-        isAuthenticated: !!token,
-        hasGuestToken: !!guestToken,
-      });
-      const updated = syncFromResponse(data);
-      if (!updated) {
-        console.warn('[cart] addToCart: syncFromResponse returned false, calling refresh...');
-        await refresh();
-      }
-      if (meta?.name) {
-        toast.success(`Added ${meta.name}${meta?.variantName ? ` (${meta.variantName})` : ''} to cart`);
-      } else {
-        toast.success('Item added to cart');
-      }
-    } catch (err) {
-      if (isVariantMismatchApiError(err)) {
-        toast.error('Invalid variant selection. Please reselect.');
-        if (meta?.onVariantMismatch) {
-          await meta.onVariantMismatch();
-        }
-        return;
-      }
-      console.error('[cart] addToCart.error', { isAuthenticated: !!token, hasGuestToken: !!guestToken, error: err });
-      handleApiError(err, 'Add to cart');
+    const previousItems = items;
+    const existingItemIndex = previousItems.findIndex((item) => item.id === (productVariantId ? String(productVariantId) : String(productId)));
+    const optimisticItems = existingItemIndex >= 0
+      ? previousItems.map((item, index) => {
+          if (index !== existingItemIndex) return item;
+          const nextQuantity = item.quantity + safeQuantity;
+          const nextSubtotal = Number((item.price * nextQuantity).toFixed(2));
+          return {
+            ...item,
+            quantity: nextQuantity,
+            subtotal: nextSubtotal,
+          };
+        })
+      : previousItems;
+
+    if (existingItemIndex >= 0) {
+      applyOptimisticSnapshot(optimisticItems);
     }
-  }, [token, guestToken, syncFromResponse, handleApiError, refresh]);
+
+    return runUniqueCartOperation(cartOperationKey, async () => {
+      try {
+        const data = await apiAddToCart(
+          token,
+          {
+            productId: Number(productId),
+            ...(productVariantId ? { productVariantId: Number(productVariantId) } : {}),
+            ...(safeQuantity ? { quantity: safeQuantity } : {}),
+          },
+          undefined,
+          guestToken
+        );
+        console.debug('[cart] addToCart.response', {
+          dataType: typeof data,
+          isArray: Array.isArray(data),
+          keys: typeof data === 'object' && data ? Object.keys(data) : [],
+          hasItems: Array.isArray(data?.items),
+          itemCount: data?.items?.length ?? 0,
+          isAuthenticated: !!token,
+          hasGuestToken: !!guestToken,
+        });
+        const updated = syncFromResponse(data);
+        if (!updated) {
+          console.warn('[cart] addToCart: syncFromResponse returned false, calling refresh...');
+          await refresh();
+        }
+        if (meta?.name) {
+          toast.success(`Added ${meta.name}${meta?.variantName ? ` (${meta.variantName})` : ''} to cart`);
+        } else {
+          toast.success('Item added to cart');
+        }
+      } catch (err) {
+        if (isVariantMismatchApiError(err)) {
+          setItems(previousItems);
+          await refresh();
+          toast.error('Invalid variant selection. Please reselect.');
+          if (meta?.onVariantMismatch) {
+            await meta.onVariantMismatch();
+          }
+          return;
+        }
+        setItems(previousItems);
+        await refresh();
+        console.error('[cart] addToCart.error', { isAuthenticated: !!token, hasGuestToken: !!guestToken, error: err });
+        handleApiError(err, 'Add to cart');
+      }
+    });
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh, items, applyOptimisticSnapshot, runUniqueCartOperation]);
 
   const removeFromCart = useCallback(async (variantId: string) => {
     clearQuantitySyncTimer(variantId);
-    try {
-      const data = await apiRemoveFromCart(token, variantId, undefined, guestToken);
-      const updated = syncFromResponse(data);
-      if (!updated) {
-        await refresh();
-      }
-      toast.success('Item removed from cart');
-    } catch (err) {
-      handleApiError(err, 'Remove from cart');
+    const cartOperationKey = `remove:${variantId}`;
+    if (inFlightOperationRef.current[cartOperationKey]) {
+      return inFlightOperationRef.current[cartOperationKey];
     }
-  }, [token, guestToken, syncFromResponse, handleApiError, refresh, clearQuantitySyncTimer]);
+
+    const previousItems = items;
+    const nextItems = previousItems.filter((item) => item.id !== variantId);
+    applyOptimisticSnapshot(nextItems);
+
+    return runUniqueCartOperation(cartOperationKey, async () => {
+      try {
+        const data = await apiRemoveFromCart(token, variantId, undefined, guestToken);
+        const updated = syncFromResponse(data);
+        if (!updated) {
+          await refresh();
+        }
+        toast.success('Item removed from cart');
+      } catch (err) {
+        setItems(previousItems);
+        await refresh();
+        handleApiError(err, 'Remove from cart');
+      }
+    });
+  }, [token, guestToken, syncFromResponse, handleApiError, refresh, clearQuantitySyncTimer, items, applyOptimisticSnapshot, runUniqueCartOperation]);
 
   const clearCart = useCallback(async () => {
     Object.keys(quantitySyncTimersRef.current).forEach((variantId) => clearQuantitySyncTimer(variantId));

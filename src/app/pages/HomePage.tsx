@@ -14,6 +14,9 @@ const HomepageProductSectionsLazy = React.lazy(() =>
 const PromoBannerLazy = React.lazy(() =>
   import('@/app/components/home/PromoBanner').then((module) => ({ default: module.PromoBanner }))
 );
+const InstagramReelsSectionLazy = React.lazy(() =>
+  import('@/app/components/home/InstagramReelsSection').then((module) => ({ default: module.InstagramReelsSection }))
+);
 const InstagramFeedLazy = React.lazy(() =>
   import('@/app/components/home/InstagramFeed').then((module) => ({ default: module.InstagramFeed }))
 );
@@ -72,15 +75,22 @@ export function HomePage() {
         <HomepageProductSectionsLazy />
       </Suspense>
 
+      {/* Instagram Reels */}
+      <Suspense fallback={<div className="h-[520px] bg-[#F8F6F2]" />}>
+        <InstagramReelsSectionLazy />
+      </Suspense>
+
+
       {/* Promotional Banner */}
       <Suspense fallback={<div className="h-40 bg-[#FFF9F0]" />}>
         <PromoBannerLazy />
       </Suspense>
 
+
       {/* Instagram Feed */}
-      <Suspense fallback={<div className="h-64 bg-[#FFF9F0]" />}>
+      {/* <Suspense fallback={<div className="h-64 bg-[#FFF9F0]" />}>
         <InstagramFeedLazy />
-      </Suspense>
+      </Suspense> */}
 
       {/* Newsletter Signup */}
       <Suspense fallback={<div className="h-40 bg-[#FFF9F0]" />}>
