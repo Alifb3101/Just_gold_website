@@ -15,11 +15,11 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   const shopLinks = [
-    { label: "New Arrivals", to: "/shop?category=2" },
-    { label: "Best Sellers", to: "/shop?category=3" },
-    { label: "Face", to: "/shop?category=4" },
-    { label: "Eyes", to: "/shop?category=5" },
-    { label: "Lips", to: "/shop?category=6" },
+    { label: "New Arrivals", to: "/category/new-in" },
+    { label: "Best Sellers", to: "/category/best-seller" },
+    { label: "Face", to: "/category/face" },
+    { label: "Eyes", to: "/category/eyes" },
+    { label: "Lips", to: "/category/lips" },
   ];
 
   const supportLinks = [

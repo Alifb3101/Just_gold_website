@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Sparkles, Eye, Circle, Brush, Gift, Star } from 'lucide-react';
+import { generateSlug } from '@/app/utils/seo';
 
 const categories = [
   {
@@ -105,7 +106,7 @@ export function CategoryLinks() {
                   viewport={{ once: true }}
                   className="group cursor-pointer flex-shrink-0"
                 >
-                  <Link to={`/shop?category=${category.id}`}>
+                  <Link to={`/category/${generateSlug(category.name)}`}>
                     {/* Category Card */}
                     <div className="w-[140px] sm:w-[160px] md:w-[180px] lg:w-[185px] xl:w-[220px] h-[210px] sm:h-[230px] md:h-[260px] lg:h-[270px] xl:h-[280px] bg-gradient-to-br from-[#F5E6D3] to-[#FAF3E0] rounded-xl border border-[#D4AF37]/30 overflow-hidden relative hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                       {/* Gold shimmer effect */}

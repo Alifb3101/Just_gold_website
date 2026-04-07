@@ -10,7 +10,7 @@ import { useWishlist } from '@/app/contexts/WishlistContext';
 import { useCategories } from '@/store/categoryStore';
 import { CartPayloadValidationError, getValidatedCartPayload } from '@/services/cartService';
 import { SEOHead, ProductSchema, BreadcrumbSchema } from '@/app/components/seo';
-import { SEO_CONFIG, stripHtml, truncateDescription } from '@/app/utils/seo';
+import { SEO_CONFIG, generateSlug, stripHtml, truncateDescription } from '@/app/utils/seo';
 import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
 import ProductSuggestions from '../components/ProductSuggestions';
 import { Reviews } from '../components/Reviews';
@@ -395,7 +395,7 @@ export function ProductDetailsPage() {
   // SEO Data - must be defined before early returns to avoid hook order issues
   const productSeoData = useMemo(() => {
     if (!product) return null;
-    const productUrl = `${SEO_CONFIG.siteUrl}/product/${product.id}-${product.slug}`;
+    const productUrl = `${SEO_CONFIG.siteUrl}/product/${product.slug || generateSlug(product.name)}`;
     const productImage = getProductImage(gallery[0], 'large') || getProductImage(gallery[0], 'medium') || gallery[0]?.url || '';
     return {
       name: product.name,
@@ -420,19 +420,19 @@ export function ProductDetailsPage() {
     if (categoryPath?.parent) {
       items.push({
         name: categoryPath.parent.name,
-        url: `${SEO_CONFIG.siteUrl}/shop?category=${categoryPath.parent.id}`,
+        url: `${SEO_CONFIG.siteUrl}/category/${generateSlug(categoryPath.parent.name)}`,
       });
     }
     if (categoryPath?.sub) {
       items.push({
         name: categoryPath.sub.name,
-        url: `${SEO_CONFIG.siteUrl}/shop?category=${categoryPath.sub.id}`,
+        url: `${SEO_CONFIG.siteUrl}/category/${generateSlug(categoryPath.sub.name)}`,
       });
     }
     if (product) {
       items.push({
         name: product.name,
-        url: `${SEO_CONFIG.siteUrl}/product/${product.id}-${product.slug}`,
+        url: `${SEO_CONFIG.siteUrl}/product/${product.slug || generateSlug(product.name)}`,
       });
     }
     return items;
@@ -688,7 +688,7 @@ export function ProductDetailsPage() {
       <SEOHead
         title={product.name}
         description={truncateDescription(stripHtml(product.description || product.subtitle))}
-        path={`/product/${product.id}-${product.slug}`}
+        path={`/product/${product.slug || generateSlug(product.name)}`}
         image={getProductImage(gallery[0], 'large') || getProductImage(gallery[0], 'medium') || gallery[0]?.url}
         imageAlt={product.name}
         type="product"
@@ -716,7 +716,7 @@ export function ProductDetailsPage() {
             {categoryPath ? (
               <>
                 <li>
-                  <Link to={`/shop?category=${categoryPath.parent.id}`} className="hover:text-[#D4AF37]">
+                  <Link to={`/category/${generateSlug(categoryPath.parent.name)}`} className="hover:text-[#D4AF37]">
                     {categoryPath.parent.name}
                   </Link>
                 </li>
@@ -724,7 +724,7 @@ export function ProductDetailsPage() {
                 {categoryPath.sub && (
                   <>
                     <li>
-                      <Link to={`/shop?category=${categoryPath.sub.id}`} className="hover:text-[#D4AF37]">
+                      <Link to={`/category/${generateSlug(categoryPath.sub.name)}`} className="hover:text-[#D4AF37]">
                         {categoryPath.sub.name}
                       </Link>
                     </li>

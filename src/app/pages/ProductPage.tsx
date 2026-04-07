@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { SlidersHorizontal } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/app/components/ui/sheet';
 import { Skeleton } from '@/app/components/ui/skeleton';
@@ -8,7 +8,7 @@ import { ProductGrid } from '@/app/components/shop/ProductGrid';
 import type { ProductCursorPage, ProductFilters, ProductSort } from '@/app/features/products/product-cursor-list.model';
 import { getProducts } from '@/services/productService';
 import { SEOHead, CategorySchema, BreadcrumbSchema } from '@/app/components/seo';
-import { SEO_CONFIG } from '@/app/utils/seo';
+import { SEO_CONFIG, generateSlug } from '@/app/utils/seo';
 import { useCategories } from '@/store/categoryStore';
 
 const PAGE_SIZE = 12;
@@ -54,6 +54,7 @@ function serializeFilters(filters: ProductFilters) {
 
 export function ProductPage() {
   const location = useLocation();
+  const { categorySlug } = useParams<{ categorySlug: string }>();
   const [filters, setFilters] = useState<ProductFilters>(DEFAULT_FILTERS);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -69,12 +70,29 @@ export function ProductPage() {
     const search = params.get('search');
     const sortParam = params.get('sort');
     const sort = VALID_SORTS.includes((sortParam ?? '') as ProductSort) ? (sortParam as ProductSort) : 'newest';
+
+    let resolvedCategory: string | null = category?.trim() || null;
+    if (!resolvedCategory && categorySlug) {
+      const normalized = generateSlug(categorySlug);
+      for (const cat of categories) {
+        if (generateSlug(cat.name) === normalized) {
+          resolvedCategory = String(cat.id);
+          break;
+        }
+        const sub = cat.subcategories?.find((s) => generateSlug(s.name) === normalized);
+        if (sub) {
+          resolvedCategory = String(sub.id);
+          break;
+        }
+      }
+    }
+
     return {
-      category: category?.trim() || null,
+      category: resolvedCategory,
       search: search?.trim() || null,
       sort,
     };
-  }, [location.search]);
+  }, [location.search, categorySlug, categories]);
 
   useEffect(() => {
     setFilters((prev) => {
@@ -187,13 +205,13 @@ export function ProductPage() {
     if (currentCategory?.parent) {
       items.push({
         name: currentCategory.parent.name,
-        url: `${SEO_CONFIG.siteUrl}/shop?category=${currentCategory.parent.id}`,
+        url: `${SEO_CONFIG.siteUrl}/category/${generateSlug(currentCategory.parent.name)}`,
       });
     }
     if (currentCategory?.sub) {
       items.push({
         name: currentCategory.sub.name,
-        url: `${SEO_CONFIG.siteUrl}/shop?category=${currentCategory.sub.id}`,
+        url: `${SEO_CONFIG.siteUrl}/category/${generateSlug(currentCategory.sub.name)}`,
       });
     }
     return items;
@@ -219,13 +237,21 @@ export function ProductPage() {
     return DEFAULT_SHOP_BANNER_IMAGE_URL;
   }, [filters.category, currentCategory]);
 
+  const canonicalPath = useMemo(() => {
+    const categoryName = currentCategory?.sub?.name || currentCategory?.parent?.name;
+    if (categoryName) {
+      return `/category/${generateSlug(categoryName)}`;
+    }
+    return '/shop';
+  }, [currentCategory]);
+
   return (
     <div className="min-h-screen bg-[#FFF9F0]">
       {/* SEO Meta Tags */}
       <SEOHead
         title={seoTitle}
         description={seoDescription}
-        path={`/shop${location.search}`}
+        path={canonicalPath}
         noIndex={!!filters.search}
         keywords={[
           'luxury cosmetics',
@@ -240,7 +266,7 @@ export function ProductPage() {
         <CategorySchema
           name={currentCategory.sub?.name || currentCategory.parent.name}
           description={seoDescription}
-          url={`${SEO_CONFIG.siteUrl}/shop?category=${currentCategory.sub?.id || currentCategory.parent.id}`}
+          url={`${SEO_CONFIG.siteUrl}${canonicalPath}`}
         />
       )}
       <BreadcrumbSchema items={breadcrumbItems} />

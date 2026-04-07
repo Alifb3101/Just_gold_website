@@ -1,29 +1,4 @@
-# Robots.txt for Luxury Cosmetics
-# https://luxurycosmetics.com/
-
 User-agent: *
 Allow: /
 
-# Sitemap location
-Sitemap: https://luxurycosmetics.com/sitemap.xml
-
-# Disallow private/user pages from indexing
-Disallow: /account
-Disallow: /wishlist
-Disallow: /checkout
-Disallow: /orders
-Disallow: /api/
-
-# Allow all search engines to crawl
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Slurp
-Allow: /
-
-# Crawl-delay for politeness
-User-agent: *
-Crawl-delay: 1
+Sitemap: https://www.justgoldcosmetics.com/sitemap.xml

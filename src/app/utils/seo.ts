@@ -1,14 +1,14 @@
 // SEO Configuration and Constants
 export const SEO_CONFIG = {
-  siteName: 'Luxury Cosmetics',
-  siteUrl: 'https://luxurycosmetics.com', // Update with your actual domain
-  defaultTitle: 'Luxury Cosmetics - Premium Beauty & Skincare Products',
+  siteName: 'Just Gold Cosmetics',
+  siteUrl: 'https://www.justgoldcosmetics.com',
+  defaultTitle: 'Just Gold Cosmetics - Premium Beauty & Skincare Products',
   defaultDescription: 'Discover premium luxury cosmetics, skincare, and beauty products. Shop the finest selection of high-end makeup, serums, and beauty essentials with free shipping.',
   defaultImage: '/og-image.jpg', // Add this image to public folder
-  twitterHandle: '@luxurycosmetics',
+  twitterHandle: '@justgoldcosmetics',
   locale: 'en_US',
   currency: 'USD',
-  brand: 'Luxury Cosmetics',
+  brand: 'Just Gold Cosmetics',
 };
 
 export type SEOProps = {

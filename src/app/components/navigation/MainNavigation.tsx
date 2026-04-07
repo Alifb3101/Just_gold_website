@@ -19,6 +19,7 @@ import { useWishlist } from "@/app/contexts/WishlistContext";
 import { useCategories } from "@/store/categoryStore";
 import { fetchSearchSuggestions, fetchTrendingSearches } from "@/services/searchService";
 import { getProducts } from "@/services/productService";
+import { generateSlug } from "@/app/utils/seo";
 
 import { MegaMenu } from "./MegaMenu";
 import { MobileNav } from "./MobileNav";
@@ -295,11 +296,12 @@ export function MainNavigation() {
   const menuItems = useMemo(() => categories, [categories]);
 
   const goCategory = (cat: ApiCategoryNode) => {
-    navigate(`/shop?category=${cat.id}`);
+    navigate(`/category/${generateSlug(cat.name)}`);
   };
 
   const goSubcategory = (parent: ApiCategoryNode, subId: number) => {
-    navigate(`/shop?category=${subId}`);
+    const sub = parent.subcategories?.find((s) => s.id === subId);
+    navigate(`/category/${generateSlug(sub?.name || parent.name)}`);
   };
 
   const smallNavStyles = `

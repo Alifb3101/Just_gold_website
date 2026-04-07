@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useCategories } from "@/store/categoryStore";
 import { useAuth } from "@/app/contexts/AuthContext";
 import type { ApiCategoryNode } from "@/app/api/categories/categories.api-model";
+import { generateSlug } from "@/app/utils/seo";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -53,12 +54,13 @@ export function MobileNav({
   }, [isOpen]);
 
   const goCategory = (cat: ApiCategoryNode) => {
-    navigate(`/shop?category=${cat.id}`);
+    navigate(`/category/${generateSlug(cat.name)}`);
     onClose();
   };
 
   const goSub = (parent: ApiCategoryNode, subId: number) => {
-    navigate(`/shop?category=${subId}`);
+    const sub = parent.subcategories?.find((s) => s.id === subId);
+    navigate(`/category/${generateSlug(sub?.name || parent.name)}`);
     onClose();
   };
 

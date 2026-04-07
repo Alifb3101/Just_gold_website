@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { AppProvider } from '@/app/contexts/AppContext';
 import { AuthProvider } from '@/app/contexts/AuthContext';
 import { CartProvider } from '@/app/contexts/CartContext';
@@ -21,6 +22,7 @@ import { ShippingReturnsPage } from '@/app/pages/ShippingReturnsPage';
 import { TrackOrderPage } from '@/app/pages/TrackOrderPage';
 import { FAQPage } from '@/app/pages/FAQPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SEO_CONFIG } from '@/app/utils/seo';
 
 import { ProtectedRoute } from '@/app/components/auth/ProtectedRoute';
 import Orders from '@/pages/Orders';
@@ -38,6 +40,20 @@ function ScrollToTop() {
   return null;
 }
 
+function RouteSEO() {
+  const location = useLocation();
+  const cleanPath = location.pathname === '/' ? '/' : location.pathname.replace(/\/+$/, '');
+  const canonicalUrl = `${SEO_CONFIG.siteUrl}${cleanPath}`;
+  const noIndex = cleanPath === '/cart' || cleanPath === '/login' || cleanPath === '/checkout';
+
+  return (
+    <Helmet>
+      <link rel="canonical" href={canonicalUrl} />
+      {noIndex ? <meta name="robots" content="noindex, nofollow" /> : null}
+    </Helmet>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -47,6 +63,7 @@ function App() {
             <CategoryProvider>
             <Router>
               <ScrollToTop />
+              <RouteSEO />
               <div className="min-h-screen bg-[#FFF9F0]">
                 {/* Navigation */}
 
@@ -67,6 +84,7 @@ function App() {
                     <Routes>
                       <Route path="/" element={<HomePage />} />
                       <Route path="/shop" element={<ShopPage />} />
+                      <Route path="/category/:categorySlug" element={<ShopPage />} />
                       <Route path="/product/:productSlug" element={<ProductDetailsPage />} />
                       <Route path="/cart" element={<CartPage />} />
                       <Route
