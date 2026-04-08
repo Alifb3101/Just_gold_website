@@ -8,7 +8,6 @@ import { WishlistProvider } from '@/app/contexts/WishlistContext';
 import { Toaster } from '@/app/components/ui/sonner';
 import { MainNavigation } from '@/app/components/navigation/MainNavigation';
 import { Footer } from '@/app/components/Footer';
-import { OrganizationSchema } from '@/app/components/seo';
 import { HomePage } from '@/app/pages/HomePage';
 import { ShopPage } from '@/app/pages/ShopPage';
 import { CartPage } from '@/app/pages/CartPage';
@@ -65,11 +64,6 @@ function App() {
             <Router>
               <ScrollToTop />
               <RouteSEO />
-              <OrganizationSchema
-                name="Just Gold Cosmetics"
-                url="https://www.justgoldcosmetics.com"
-                logo="https://res.cloudinary.com/dvagrhc2w/image/upload/v1775553633/JG-Floral_300x-8_zvuqnr.png"
-              />
               <div className="min-h-screen bg-[#FFF9F0]">
                 {/* Navigation */}
 

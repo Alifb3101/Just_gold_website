@@ -2,8 +2,7 @@ import React, { Suspense } from 'react';
 import { HeroSlider } from '@/app/components/home/HeroSlider';
 import { CategoryLinks } from '@/app/components/home/CategoryLinks';
 import { BrandMarqueePage } from '@/app/components/home/BrandMarqueePage';
-import { SEOHead, WebSiteSchema } from '@/app/components/seo';
-import { SEO_CONFIG } from '@/app/utils/seo';
+import { SEOHead } from '@/app/components/seo';
 
 const FeaturedCollectionsLazy = React.lazy(() =>
   import('@/app/components/home/FeaturedCollections').then((module) => ({ default: module.FeaturedCollections }))
@@ -43,9 +42,6 @@ export function HomePage() {
         ]}
       />
       
-      {/* Structured Data */}
-      <WebSiteSchema searchUrl={`${SEO_CONFIG.siteUrl}/shop?search={search_term_string}`} />
-
       {/* Hero Section */}
       <HeroSlider />
 
