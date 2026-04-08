@@ -2,8 +2,8 @@
 export const SEO_CONFIG = {
   siteName: 'Just Gold Cosmetics',
   siteUrl: 'https://www.justgoldcosmetics.com',
-  defaultTitle: 'Just Gold Cosmetics - Premium Beauty & Skincare Products',
-  defaultDescription: 'Discover premium luxury cosmetics, skincare, and beauty products. Shop the finest selection of high-end makeup, serums, and beauty essentials with free shipping.',
+  defaultTitle: 'Just Gold Cosmetics - Premium Makeup & Cosmetics',
+  defaultDescription: 'Discover premium makeup and cosmetics from Just Gold Cosmetics. Shop high-end beauty essentials with free shipping.',
   defaultImage: '/og-image.jpg', // Add this image to public folder
   twitterHandle: '@justgoldcosmetics',
   locale: 'en_US',

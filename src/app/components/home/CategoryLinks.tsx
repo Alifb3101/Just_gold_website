@@ -8,6 +8,7 @@ const categories = [
   {
     id: 6,
     name: 'Lips',
+    routeSlug: 'lips',
     icon: Circle,
     productCount: 24,
     image: 'https://i.postimg.cc/g05yt0pc/JG-Lip.jpg',
@@ -15,6 +16,7 @@ const categories = [
   {
     id: 5,
     name: 'Eyes',
+    routeSlug: 'eyes',
     icon: Eye,
     productCount: 32,
     image: 'https://i.postimg.cc/6QGzXZYn/JG-Eye02.jpg',
@@ -22,6 +24,7 @@ const categories = [
   {
     id: 4,
     name: 'Face',
+    routeSlug: 'face',
     icon: Sparkles,
     productCount: 28,
     image: 'https://i.postimg.cc/vmj72mym/JG-face.jpg',
@@ -29,6 +32,7 @@ const categories = [
     {
     id: 43,
     name: 'Nails',
+    routeSlug: 'nails',
     icon: Sparkles,
     productCount: 28,
     image: 'https://i.postimg.cc/YSVNDS7Q/JG_Nail.jpg',
@@ -36,6 +40,7 @@ const categories = [
   {
     id: 7,
     name: 'Brushes',
+    routeSlug: 'tools-brushes',
     icon: Brush,
     productCount: 18,
     image: 'https://i.postimg.cc/5tG5KtJx/JG_Brush.jpg',
@@ -43,6 +48,7 @@ const categories = [
   {
     id: 8,
     name: 'Makeup Kits',
+    routeSlug: 'makeupkits',
     icon: Gift,
     productCount: 15,
     image: 'https://i.postimg.cc/fbKyk2HP/JG_Makeup_Kit.jpg',
@@ -50,6 +56,7 @@ const categories = [
   {
     id: 3,
     name: 'Best Sellers',
+    routeSlug: 'best-seller',
     icon: Star,
     productCount: 20,
     image: 'https://i.postimg.cc/0NfjrWtB/JG_Bestseller.jpg',
@@ -106,7 +113,7 @@ export function CategoryLinks() {
                   viewport={{ once: true }}
                   className="group cursor-pointer flex-shrink-0"
                 >
-                  <Link to={`/category/${generateSlug(category.name)}`}>
+                  <Link to={`/category/${category.routeSlug || generateSlug(category.name)}`}>
                     {/* Category Card */}
                     <div className="w-[140px] sm:w-[160px] md:w-[180px] lg:w-[185px] xl:w-[220px] h-[210px] sm:h-[230px] md:h-[260px] lg:h-[270px] xl:h-[280px] bg-gradient-to-br from-[#F5E6D3] to-[#FAF3E0] rounded-xl border border-[#D4AF37]/30 overflow-hidden relative hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                       {/* Gold shimmer effect */}

@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { HeroSlider } from '@/app/components/home/HeroSlider';
 import { CategoryLinks } from '@/app/components/home/CategoryLinks';
 import { BrandMarqueePage } from '@/app/components/home/BrandMarqueePage';
-import { SEOHead, OrganizationSchema, WebSiteSchema } from '@/app/components/seo';
+import { SEOHead, WebSiteSchema } from '@/app/components/seo';
 import { SEO_CONFIG } from '@/app/utils/seo';
 
 const FeaturedCollectionsLazy = React.lazy(() =>
@@ -29,31 +29,21 @@ export function HomePage() {
     <main>
       {/* SEO Meta Tags */}
       <SEOHead
-        title="Premium Beauty & Skincare Products"
-        description="Discover premium luxury cosmetics, skincare, and beauty products. Shop the finest selection of high-end makeup, serums, and beauty essentials with free shipping."
+        title="Premium Makeup & Cosmetics"
+        description="Discover premium makeup and cosmetics from Just Gold Cosmetics. Shop high-end beauty essentials with free shipping."
         path="/"
         keywords={[
-          'luxury cosmetics',
-          'premium beauty',
-          'skincare',
-          'makeup',
-          'high-end beauty',
-          'luxury skincare',
+          'just gold cosmetics',
+          'premium makeup',
+          'cosmetics',
           'beauty products',
+          'high-end makeup',
+          'face makeup',
+          'lip products',
         ]}
       />
       
       {/* Structured Data */}
-      <OrganizationSchema
-        name={SEO_CONFIG.siteName}
-        url={SEO_CONFIG.siteUrl}
-        description={SEO_CONFIG.defaultDescription}
-        socialLinks={[
-          'https://www.instagram.com/luxurycosmetics',
-          'https://www.facebook.com/luxurycosmetics',
-          'https://twitter.com/luxurycosmetics',
-        ]}
-      />
       <WebSiteSchema searchUrl={`${SEO_CONFIG.siteUrl}/shop?search={search_term_string}`} />
 
       {/* Hero Section */}
