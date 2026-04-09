@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import path from 'path'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
@@ -59,18 +59,30 @@ const PRERENDER_SEO_OPTIONS = {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_PROXY_TARGET || 'http://localhost:5000'
+  const isVercel = process.env.VERCEL === '1'
+  const isCI = process.env.CI === '1' || process.env.CI === 'true'
+  const enablePrerender = env.VITE_ENABLE_PRERENDER === 'true'
 
-  return {
-  plugins: [
+  const plugins: PluginOption[] = [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
-    vitePluginPrerenderer({
-      routes: PRERENDER_ROUTES,
-      options: PRERENDER_SEO_OPTIONS,
-    }),
-  ],
+  ]
+
+  // This plugin depends on a local Chrome runtime (Puppeteer). Keep it opt-in
+  // so serverless/CI providers (e.g. Vercel) do not fail during build.
+  if (enablePrerender && !isVercel && !isCI) {
+    plugins.push(
+      vitePluginPrerenderer({
+        routes: PRERENDER_ROUTES,
+        options: PRERENDER_SEO_OPTIONS,
+      })
+    )
+  }
+
+  return {
+  plugins,
   resolve: {
     alias: {
       // Alias @ to the src directory
