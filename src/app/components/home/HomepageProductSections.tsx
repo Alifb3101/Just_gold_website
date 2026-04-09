@@ -2,6 +2,7 @@ import React, { startTransition, useCallback, useEffect, useMemo, useRef, useSta
 import { Star, X } from 'lucide-react';
 import { ProductCard } from '@/app/components/products/ProductCard';
 import { Skeleton } from '@/app/components/ui/skeleton';
+import { useApp } from '@/app/contexts/AppContext';
 import type { HomepageData, HomepageSectionKey } from '@/services/homepageService';
 import { getHomepageDataCached } from '@/services/homepageService';
 import { getProductImage, getProductImageSrcSet } from '@/app/utils/productImage';
@@ -56,6 +57,7 @@ function ProductSectionSkeleton() {
 }
 
 export function HomepageProductSections() {
+	const { convertPrice } = useApp();
 	const mountedRef = useRef(true);
 	const introTimerRef = useRef<number | null>(null);
 	const lastDealInViewRef = useRef<boolean | null>(null);
@@ -126,6 +128,17 @@ export function HomepageProductSections() {
 	}, [dealProduct]);
 
 	const dealProductImageSrcSet = useMemo(() => getProductImageSrcSet(dealProduct), [dealProduct]);
+	const dealDisplayPrice = useMemo(
+		() => (dealProduct ? convertPrice(dealProduct.price) : ''),
+		[dealProduct, convertPrice]
+	);
+	const dealDisplayOriginalPrice = useMemo(
+		() =>
+			dealProduct && typeof dealProduct.originalPrice === 'number'
+				? convertPrice(dealProduct.originalPrice)
+				: null,
+		[dealProduct, convertPrice]
+	);
 
 	useEffect(() => {
 		if (!dealProductImage) return;
@@ -297,9 +310,9 @@ export function HomepageProductSections() {
 							</div>
 
 							<div className="flex items-end gap-6">
-								<span className="text-4xl font-bold text-black">AED {dealProduct.price}</span>
-								{dealProduct.originalPrice ? (
-									<span className="text-xl line-through text-gray-400">AED {dealProduct.originalPrice}</span>
+								<span className="text-4xl font-bold text-black">{dealDisplayPrice}</span>
+								{dealDisplayOriginalPrice ? (
+									<span className="text-xl line-through text-gray-400">{dealDisplayOriginalPrice}</span>
 								) : null}
 							</div>
 
@@ -418,9 +431,9 @@ export function HomepageProductSections() {
 									</h3>
 									<p className="mt-1 text-xs sm:text-sm text-[#5A4635] line-clamp-1">{dealProduct.name}</p>
 									<div className="mt-3 flex items-end gap-3">
-										<span className="text-lg sm:text-2xl font-bold text-[#3E2723]">AED {dealProduct.price}</span>
-										{dealProduct.originalPrice ? (
-											<span className="text-xs sm:text-sm line-through text-[#9E8764]">AED {dealProduct.originalPrice}</span>
+										<span className="text-lg sm:text-2xl font-bold text-[#3E2723]">{dealDisplayPrice}</span>
+										{dealDisplayOriginalPrice ? (
+											<span className="text-xs sm:text-sm line-through text-[#9E8764]">{dealDisplayOriginalPrice}</span>
 										) : null}
 									</div>
 									<p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-[#8A6A45]">Pinning shortcut...</p>

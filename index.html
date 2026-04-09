@@ -13,9 +13,9 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dvagrhc2w/image/upload/v1775553633/JG-Floral_300x-8_zvuqnr.png" />
-    <link rel="shortcut icon" type="image/png" href="https://res.cloudinary.com/dvagrhc2w/image/upload/v1775553633/JG-Floral_300x-8_zvuqnr.png" />
-    <link rel="apple-touch-icon" href="https://res.cloudinary.com/dvagrhc2w/image/upload/v1775553633/JG-Floral_300x-8_zvuqnr.png" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="shortcut icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -58,8 +58,10 @@
         "name": "Just Gold Cosmetics",
         "url": "https://www.justgoldcosmetics.com",
         "logo": "https://www.justgoldcosmetics.com/logo.png",
+        "description": "Just Gold Cosmetics is a premium makeup and cosmetics brand offering high-quality beauty essentials for lips, eyes, face, nails, and professional looks.",
         "sameAs": [
-          "https://www.instagram.com/justgoldcosmetics"
+          "https://www.instagram.com/justgoldcosmetics",
+          "https://www.tiktok.com/@just.gold.make.up"
         ]
       }
     </script>
@@ -69,7 +71,15 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Just Gold Cosmetics",
-        "url": "https://www.justgoldcosmetics.com"
+        "url": "https://www.justgoldcosmetics.com",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.justgoldcosmetics.com/shop?search={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
       }
     </script>
   </head>

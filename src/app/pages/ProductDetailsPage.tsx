@@ -5,6 +5,7 @@ import { Heart, Share2, Star, ChevronDown, ChevronUp, Minus, Plus } from 'lucide
 import { toast } from 'sonner';
 import { fetchProductByIdSlug } from '@/app/api/products/product-details.api';
 import type { Product, ProductImage, ProductShade } from '@/app/features/products/product-details.model';
+import { useApp } from '@/app/contexts/AppContext';
 import { useCart } from '@/app/contexts/CartContext';
 import { useWishlist } from '@/app/contexts/WishlistContext';
 import { useCategories } from '@/store/categoryStore';
@@ -167,6 +168,7 @@ ProductMainMedia.displayName = 'ProductMainMedia';
 export function ProductDetailsPage() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const [searchParams] = useSearchParams();
+  const { convertPrice } = useApp();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { categories } = useCategories();
@@ -302,6 +304,11 @@ export function ProductDetailsPage() {
   const maxStock = selectedShadeData?.stock ?? product?.baseStock ?? 0;
   const effectivePrice = selectedShadeData?.discountPrice ?? selectedShadeData?.price ?? product?.price ?? 0;
   const originalPrice = selectedShadeData?.discountPrice ? selectedShadeData.price : undefined;
+  const displayEffectivePrice = useMemo(() => convertPrice(effectivePrice), [convertPrice, effectivePrice]);
+  const displayOriginalPrice = useMemo(
+    () => (typeof originalPrice === 'number' ? convertPrice(originalPrice) : null),
+    [convertPrice, originalPrice]
+  );
   const discountPercent = selectedShadeData?.discountPrice && selectedShadeData.price
     ? Math.max(0, Math.round((1 - (selectedShadeData.discountPrice / selectedShadeData.price)) * 100))
     : 0;
@@ -849,14 +856,13 @@ export function ProductDetailsPage() {
               {/* 6. Price */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="review-meta text-gray-500">{product.currency}</span>
                   <span className="product-price text-[#3E2723]">
-                    {effectivePrice.toFixed(2)}
+                    {displayEffectivePrice}
                   </span>
                 </div>
-                {originalPrice && (
+                {displayOriginalPrice && (
                   <div className="flex items-center gap-2">
-                    <span className="meta-text text-gray-400 line-through">{originalPrice.toFixed(2)}</span>
+                    <span className="meta-text text-gray-400 line-through">{displayOriginalPrice}</span>
                     <span className="review-meta font-semibold text-red-600">-{discountPercent}%</span>
                   </div>
                 )}
@@ -985,14 +991,13 @@ export function ProductDetailsPage() {
               {/* Price */}
               <div className="flex items-center gap-4 mb-4 md:mb-6 lg:mb-8">
                 <div className="flex items-baseline gap-2">
-                  <span className="review-meta text-gray-500">{product.currency}</span>
                   <span className="product-price text-[#3E2723]">
-                    {effectivePrice.toFixed(2)}
+                    {displayEffectivePrice}
                   </span>
                 </div>
-                {originalPrice && (
+                {displayOriginalPrice && (
                   <div className="flex items-center gap-2">
-                    <span className="meta-text text-gray-400 line-through">{originalPrice.toFixed(2)}</span>
+                    <span className="meta-text text-gray-400 line-through">{displayOriginalPrice}</span>
                     <span className="review-meta font-semibold text-red-600">-{discountPercent}%</span>
                   </div>
                 )}
