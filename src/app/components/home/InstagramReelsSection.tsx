@@ -66,6 +66,15 @@ export const instagramReelsMockData: InstagramReelItem[] = [
 		product_link: '/product/19-new-formula-foundation-stick--concealer',
 		instagram_link: 'https://www.instagram.com/reel/DWGwc95CFEu/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
 	},
+    	{
+		id: 'reel-7',
+		video_url: 'https://zskzrnqtcbwkyhbwgnha.supabase.co/storage/v1/object/public/reels/bfb39a8e-d4b0-4940-8722-fc129eacec7a.mp4',
+		product_name: 'New Formula Foundation Stick & Concealer',
+		price: 'AED 40',
+		product_image: 'https://res.cloudinary.com/dvagrhc2w/image/upload/w_1400,f_auto,q_auto/just_gold/products/variants/osrzhczxxgjvpcts8ymd',
+		product_link: '/product/19-new-formula-foundation-stick--concealer',
+		instagram_link: 'https://www.instagram.com/reel/DWGwc95CFEu/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
+	},
 ];
 
 type InstagramReelsSectionProps = {
@@ -106,15 +115,15 @@ function ReelCard({
 	item,
 	scrollRoot,
 	onVisibilityChange,
+	shouldSuppressClick,
 }: {
 	item: InstagramReelItem;
 	scrollRoot: HTMLElement | null;
 	onVisibilityChange: (id: string, ratio: number) => void;
+	shouldSuppressClick: () => boolean;
 }) {
 	const cardRef = useRef<HTMLDivElement | null>(null);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
-	const touchStartXRef = useRef<number | null>(null);
-	const touchDeltaXRef = useRef(0);
 	const [hasLoadedVideo, setHasLoadedVideo] = useState(false);
 	const [isEntered, setIsEntered] = useState(false);
 
@@ -156,12 +165,11 @@ function ReelCard({
 	}, [item.instagram_link, item.product_link]);
 
 	const handleCardClick = useCallback(() => {
-		if (Math.abs(touchDeltaXRef.current) > 8) {
-			touchDeltaXRef.current = 0;
+		if (shouldSuppressClick()) {
 			return;
 		}
 		openInstagram();
-	}, [openInstagram]);
+	}, [openInstagram, shouldSuppressClick]);
 
 	return (
 		<div
@@ -169,19 +177,6 @@ function ReelCard({
 			role="link"
 			tabIndex={0}
 			onClick={handleCardClick}
-			onTouchStart={(event) => {
-				touchStartXRef.current = event.touches[0]?.clientX ?? null;
-				touchDeltaXRef.current = 0;
-			}}
-			onTouchMove={(event) => {
-				if (touchStartXRef.current == null) return;
-				const currentX = event.touches[0]?.clientX;
-				if (typeof currentX !== 'number') return;
-				touchDeltaXRef.current = currentX - touchStartXRef.current;
-			}}
-			onTouchEnd={() => {
-				touchStartXRef.current = null;
-			}}
 			onKeyDown={(event) => {
 				if (event.key === 'Enter' || event.key === ' ') {
 					event.preventDefault();
@@ -266,11 +261,21 @@ export function InstagramReelsSection({
 	items = instagramReelsMockData,
 	title = 'Just Gold Community',
 	subtitle = 'Luxury beauty stories, short-form and shoppable.',
-	maxItems = 6,
+	maxItems,
 	className = '',
 }: InstagramReelsSectionProps) {
-	const displayItems = useMemo(() => items.slice(0, maxItems), [items, maxItems]);
+	const displayItems = useMemo(() => {
+		if (typeof maxItems === 'number' && maxItems > 0) {
+			return items.slice(0, maxItems);
+		}
+		return items;
+	}, [items, maxItems]);
 	const carouselRef = useRef<HTMLDivElement | null>(null);
+	const isDraggingRef = useRef(false);
+	const dragStartXRef = useRef(0);
+	const dragStartScrollLeftRef = useRef(0);
+	const hasDraggedRef = useRef(false);
+	const suppressClickUntilRef = useRef(0);
 	const [scrollRoot, setScrollRoot] = useState<HTMLElement | null>(null);
 	const ratiosRef = useRef<Record<string, number>>({});
 
@@ -296,6 +301,38 @@ export function InstagramReelsSection({
 		[]
 	);
 
+	const shouldSuppressClick = useCallback(() => Date.now() < suppressClickUntilRef.current, []);
+
+	const startDragScroll = useCallback((clientX: number) => {
+		const node = carouselRef.current;
+		if (!node) return;
+		isDraggingRef.current = true;
+		hasDraggedRef.current = false;
+		dragStartXRef.current = clientX;
+		dragStartScrollLeftRef.current = node.scrollLeft;
+		node.style.cursor = 'grabbing';
+	}, []);
+
+	const moveDragScroll = useCallback((clientX: number) => {
+		const node = carouselRef.current;
+		if (!node || !isDraggingRef.current) return;
+		const deltaX = clientX - dragStartXRef.current;
+		if (Math.abs(deltaX) > 4) {
+			hasDraggedRef.current = true;
+		}
+		node.scrollLeft = dragStartScrollLeftRef.current - deltaX;
+	}, []);
+
+	const stopDragScroll = useCallback(() => {
+		const node = carouselRef.current;
+		if (hasDraggedRef.current) {
+			suppressClickUntilRef.current = Date.now() + 220;
+		}
+		isDraggingRef.current = false;
+		hasDraggedRef.current = false;
+		if (node) node.style.cursor = 'grab';
+	}, []);
+
 	return (
 		<section className={`bg-[#F5F3EF] py-10 md:py-16 ${className}`.trim()}>
 			<div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
@@ -309,10 +346,38 @@ export function InstagramReelsSection({
 					</p>
 				</div>
 
-				<div className="relative">
+				<div className="relative overflow-visible">
 					<div
 						ref={setScrollRootRef}
-						className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-3 pt-1 scroll-px-4 overscroll-x-contain sm:gap-2.5 sm:scroll-px-6 md:gap-3 md:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [touch-action:pan-x] [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden"
+						onPointerDown={(event) => {
+							if (event.button !== 0 && event.pointerType !== 'touch') return;
+							startDragScroll(event.clientX);
+						}}
+						onPointerMove={(event) => {
+							if (!isDraggingRef.current) return;
+							moveDragScroll(event.clientX);
+						}}
+						onPointerUp={stopDragScroll}
+						onPointerCancel={stopDragScroll}
+						onMouseDown={(event) => {
+							if (event.button !== 0) return;
+							startDragScroll(event.clientX);
+						}}
+						onMouseMove={(event) => {
+							if (!isDraggingRef.current) return;
+							event.preventDefault();
+							moveDragScroll(event.clientX);
+						}}
+						onMouseUp={stopDragScroll}
+						onMouseLeave={stopDragScroll}
+						onWheel={(event) => {
+							const node = carouselRef.current;
+							if (!node) return;
+							if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+								node.scrollBy({ left: event.deltaY, behavior: 'auto' });
+							}
+						}}
+						className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-3 pt-1 scroll-px-4 overscroll-x-contain select-none cursor-grab sm:gap-2.5 sm:scroll-px-6 md:gap-3 md:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [touch-action:pan-y] [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden"
 					>
 						{displayItems.map((item) => (
 							<ReelCard
@@ -320,30 +385,31 @@ export function InstagramReelsSection({
 								item={item}
 								scrollRoot={scrollRoot}
 								onVisibilityChange={handleVisibilityChange}
+								shouldSuppressClick={shouldSuppressClick}
 							/>
 						))}
 					</div>
 
-					<div className="pointer-events-none absolute bottom-3 left-0 top-1 z-10 w-10 rounded-l-[18px] bg-gradient-to-r from-[#F5F3EF] via-[#F5F3EF]/92 to-transparent lg:hidden" />
-					<div className="pointer-events-none absolute bottom-3 right-0 top-1 z-10 w-10 rounded-r-[18px] bg-gradient-to-l from-[#F5F3EF] via-[#F5F3EF]/92 to-transparent lg:hidden" />
+					<div className="pointer-events-none absolute inset-y-1 -left-7 z-10 w-7 rounded-l-[18px] bg-gradient-to-r from-[#F5F3EF] via-[#F5F3EF]/70 to-transparent sm:-left-8 sm:w-8" />
+					<div className="pointer-events-none absolute inset-y-1 -right-7 z-10 w-7 rounded-r-[18px] bg-gradient-to-l from-[#F5F3EF] via-[#F5F3EF]/70 to-transparent sm:-right-8 sm:w-8" />
 
-					<div className="pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 lg:hidden">
+					<div className="pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 sm:left-2 lg:left-3">
 						<button
 							type="button"
 							onClick={() => scrollCarousel('left')}
 							aria-label="Scroll reels left"
-							className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#FFF9F0]/95 text-[#8B7E72] shadow-[0_8px_16px_rgba(43,29,15,0.16)] transition-colors hover:bg-[#F8F2E8] sm:h-9 sm:w-9"
+							className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#FFF9F0]/95 text-[#8B7E72] shadow-[0_8px_16px_rgba(43,29,15,0.16)] transition-colors hover:bg-[#F8F2E8] sm:h-9 sm:w-9 lg:h-10 lg:w-10"
 						>
 							<span aria-hidden="true">&#8249;</span>
 						</button>
 					</div>
 
-					<div className="pointer-events-none absolute right-1 top-1/2 z-20 -translate-y-1/2 lg:hidden">
+					<div className="pointer-events-none absolute right-1 top-1/2 z-20 -translate-y-1/2 sm:right-2 lg:right-3">
 						<button
 							type="button"
 							onClick={() => scrollCarousel('right')}
 							aria-label="Scroll reels right"
-							className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#FFF9F0]/95 text-[#8B7E72] shadow-[0_8px_16px_rgba(43,29,15,0.16)] transition-colors hover:bg-[#F8F2E8] sm:h-9 sm:w-9"
+							className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#FFF9F0]/95 text-[#8B7E72] shadow-[0_8px_16px_rgba(43,29,15,0.16)] transition-colors hover:bg-[#F8F2E8] sm:h-9 sm:w-9 lg:h-10 lg:w-10"
 						>
 							<span aria-hidden="true">&#8250;</span>
 						</button>
