@@ -90,14 +90,14 @@ function useIntersectionRatio<T extends Element>(targetRef: React.RefObject<T | 
 
 	useEffect(() => {
 		const target = targetRef.current;
-		if (!target || !root) return;
+		if (!target) return;
 
 		const observer = new IntersectionObserver(
 			([entry]) => {
 				setRatio(entry.intersectionRatio);
 			},
 			{
-				root,
+				root: root ?? null,
 				threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
 				rootMargin: '0px',
 			}
@@ -115,12 +115,10 @@ function ReelCard({
 	item,
 	scrollRoot,
 	onVisibilityChange,
-	shouldSuppressClick,
 }: {
 	item: InstagramReelItem;
 	scrollRoot: HTMLElement | null;
 	onVisibilityChange: (id: string, ratio: number) => void;
-	shouldSuppressClick: () => boolean;
 }) {
 	const cardRef = useRef<HTMLDivElement | null>(null);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -159,36 +157,15 @@ function ReelCard({
 		}
 	}, [hasLoadedVideo]);
 
-	const openInstagram = useCallback(() => {
-		const link = item.instagram_link ?? item.product_link;
-		window.open(link, '_blank', 'noopener,noreferrer');
-	}, [item.instagram_link, item.product_link]);
-
-	const handleCardClick = useCallback(() => {
-		if (shouldSuppressClick()) {
-			return;
-		}
-		openInstagram();
-	}, [openInstagram, shouldSuppressClick]);
-
 	return (
 		<div
 			ref={cardRef}
-			role="link"
-			tabIndex={0}
-			onClick={handleCardClick}
-			onKeyDown={(event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault();
-					openInstagram();
-				}
-			}}
-			className="group relative flex-none snap-start w-[clamp(138px,42vw,170px)] sm:w-[182px] md:w-[198px] lg:w-[220px] xl:w-[224px] max-w-[224px] cursor-pointer outline-none select-none"
+			className="group relative w-[clamp(138px,42vw,170px)] sm:w-[182px] md:w-[198px] lg:w-[220px] xl:w-[224px] max-w-[224px] select-none"
 		>
 			<div
 				className={`relative aspect-[9/16] overflow-hidden rounded-[18px] bg-[#F8F2E8] shadow-[0_16px_32px_rgba(40,28,16,0.10)] ring-1 ring-[#D4AF37]/18 transition-all duration-300 ease-out will-change-transform motion-reduce:transition-none ${
 					isEntered ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
-				} md:group-hover:scale-[1.04] md:group-hover:shadow-[0_18px_34px_rgba(0,0,0,0.18)] touch-pan-x overscroll-x-contain`}
+				} md:group-hover:scale-[1.04] md:group-hover:shadow-[0_18px_34px_rgba(0,0,0,0.18)]`}
 			>
 				<img
 					src={item.product_image}
@@ -271,23 +248,69 @@ export function InstagramReelsSection({
 		return items;
 	}, [items, maxItems]);
 	const carouselRef = useRef<HTMLDivElement | null>(null);
-	const isDraggingRef = useRef(false);
-	const dragStartXRef = useRef(0);
-	const dragStartScrollLeftRef = useRef(0);
-	const hasDraggedRef = useRef(false);
-	const suppressClickUntilRef = useRef(0);
-	const [scrollRoot, setScrollRoot] = useState<HTMLElement | null>(null);
+	const isMouseDraggingRef = useRef(false);
+	const mouseStartXRef = useRef(0);
+	const mouseStartScrollLeftRef = useRef(0);
 	const ratiosRef = useRef<Record<string, number>>({});
+	const [scrollRoot, setScrollRoot] = useState<HTMLElement | null>(null);
+	const [canScrollLeft, setCanScrollLeft] = useState(false);
+	const [canScrollRight, setCanScrollRight] = useState(false);
 
-	const setScrollRootRef = useCallback((node: HTMLDivElement | null) => {
+	const updateScrollState = useCallback(() => {
+		const node = carouselRef.current;
+		if (!node) {
+			setCanScrollLeft(false);
+			setCanScrollRight(false);
+			return;
+		}
+
+		const maxLeft = Math.max(0, node.scrollWidth - node.clientWidth);
+		setCanScrollLeft(node.scrollLeft > 2);
+		setCanScrollRight(node.scrollLeft < maxLeft - 2);
+	}, []);
+
+	const setCarouselRef = useCallback((node: HTMLDivElement | null) => {
 		carouselRef.current = node;
 		setScrollRoot(node);
+		requestAnimationFrame(updateScrollState);
+	}, [updateScrollState]);
+
+	const stopMouseDrag = useCallback(() => {
+		isMouseDraggingRef.current = false;
+		const node = carouselRef.current;
+		if (node) node.style.cursor = 'grab';
 	}, []);
+
+	useEffect(() => {
+		updateScrollState();
+	}, [displayItems.length, updateScrollState]);
+
+	useEffect(() => {
+		const node = carouselRef.current;
+		if (!node) return;
+
+		const onScroll = () => updateScrollState();
+		node.addEventListener('scroll', onScroll, { passive: true });
+		window.addEventListener('resize', onScroll);
+
+		return () => {
+			node.removeEventListener('scroll', onScroll);
+			window.removeEventListener('resize', onScroll);
+		};
+	}, [updateScrollState]);
+
+	useEffect(() => {
+		const onWindowMouseUp = () => stopMouseDrag();
+		window.addEventListener('mouseup', onWindowMouseUp);
+		return () => window.removeEventListener('mouseup', onWindowMouseUp);
+	}, [stopMouseDrag]);
 
 	const scrollCarousel = useCallback((direction: 'left' | 'right') => {
 		const node = carouselRef.current;
 		if (!node) return;
-		const amount = Math.max(180, Math.round(node.clientWidth * 0.72));
+		const card = node.querySelector('[data-reel-card]') as HTMLElement | null;
+		const cardWidth = card?.offsetWidth ?? 220;
+		const amount = Math.max(180, Math.round(cardWidth * 1.05));
 		node.scrollBy({
 			left: direction === 'right' ? amount : -amount,
 			behavior: 'smooth',
@@ -301,37 +324,8 @@ export function InstagramReelsSection({
 		[]
 	);
 
-	const shouldSuppressClick = useCallback(() => Date.now() < suppressClickUntilRef.current, []);
-
-	const startDragScroll = useCallback((clientX: number) => {
-		const node = carouselRef.current;
-		if (!node) return;
-		isDraggingRef.current = true;
-		hasDraggedRef.current = false;
-		dragStartXRef.current = clientX;
-		dragStartScrollLeftRef.current = node.scrollLeft;
-		node.style.cursor = 'grabbing';
-	}, []);
-
-	const moveDragScroll = useCallback((clientX: number) => {
-		const node = carouselRef.current;
-		if (!node || !isDraggingRef.current) return;
-		const deltaX = clientX - dragStartXRef.current;
-		if (Math.abs(deltaX) > 4) {
-			hasDraggedRef.current = true;
-		}
-		node.scrollLeft = dragStartScrollLeftRef.current - deltaX;
-	}, []);
-
-	const stopDragScroll = useCallback(() => {
-		const node = carouselRef.current;
-		if (hasDraggedRef.current) {
-			suppressClickUntilRef.current = Date.now() + 220;
-		}
-		isDraggingRef.current = false;
-		hasDraggedRef.current = false;
-		if (node) node.style.cursor = 'grab';
-	}, []);
+	const isAtStart = !canScrollLeft;
+	const isAtEnd = !canScrollRight;
 
 	return (
 		<section className={`bg-[#F5F3EF] py-10 md:py-16 ${className}`.trim()}>
@@ -346,54 +340,47 @@ export function InstagramReelsSection({
 					</p>
 				</div>
 
-				<div className="relative overflow-visible">
-					<div
-						ref={setScrollRootRef}
-						onPointerDown={(event) => {
-							if (event.button !== 0 && event.pointerType !== 'touch') return;
-							startDragScroll(event.clientX);
-						}}
-						onPointerMove={(event) => {
-							if (!isDraggingRef.current) return;
-							moveDragScroll(event.clientX);
-						}}
-						onPointerUp={stopDragScroll}
-						onPointerCancel={stopDragScroll}
-						onMouseDown={(event) => {
-							if (event.button !== 0) return;
-							startDragScroll(event.clientX);
-						}}
-						onMouseMove={(event) => {
-							if (!isDraggingRef.current) return;
-							event.preventDefault();
-							moveDragScroll(event.clientX);
-						}}
-						onMouseUp={stopDragScroll}
-						onMouseLeave={stopDragScroll}
-						onWheel={(event) => {
-							const node = carouselRef.current;
-							if (!node) return;
-							if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-								node.scrollBy({ left: event.deltaY, behavior: 'auto' });
-							}
-						}}
-						className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-3 pt-1 scroll-px-4 overscroll-x-contain select-none cursor-grab sm:gap-2.5 sm:scroll-px-6 md:gap-3 md:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [touch-action:pan-y] [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden"
-					>
-						{displayItems.map((item) => (
-							<ReelCard
-								key={item.id}
-								item={item}
-								scrollRoot={scrollRoot}
-								onVisibilityChange={handleVisibilityChange}
-								shouldSuppressClick={shouldSuppressClick}
-							/>
-						))}
+				<div className="relative">
+					<div className="overflow-hidden px-10 sm:px-12 lg:px-14">
+						<div
+							ref={setCarouselRef}
+							onMouseDown={(event) => {
+								if (event.button !== 0) return;
+								const node = carouselRef.current;
+								if (!node) return;
+								isMouseDraggingRef.current = true;
+								mouseStartXRef.current = event.clientX;
+								mouseStartScrollLeftRef.current = node.scrollLeft;
+								node.style.cursor = 'grabbing';
+								event.preventDefault();
+							}}
+							onMouseMove={(event) => {
+								if (!isMouseDraggingRef.current) return;
+								const node = carouselRef.current;
+								if (!node) return;
+								const deltaX = event.clientX - mouseStartXRef.current;
+								node.scrollLeft = mouseStartScrollLeftRef.current - deltaX;
+							}}
+							onMouseUp={stopMouseDrag}
+							onMouseLeave={stopMouseDrag}
+							className="no-scrollbar flex gap-2 sm:gap-2.5 md:gap-3 overflow-x-auto scroll-smooth snap-x snap-proximity cursor-grab [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [touch-action:pan-x] [&::-webkit-scrollbar]:hidden"
+						>
+							{displayItems.map((item) => (
+								<div key={item.id} data-reel-card className="snap-start shrink-0 px-1 sm:px-1.5 md:px-2 pb-3 pt-1">
+									<ReelCard
+										item={item}
+										scrollRoot={scrollRoot}
+										onVisibilityChange={handleVisibilityChange}
+									/>
+								</div>
+							))}
+						</div>
 					</div>
 
-					<div className="pointer-events-none absolute inset-y-1 -left-7 z-10 w-7 rounded-l-[18px] bg-gradient-to-r from-[#F5F3EF] via-[#F5F3EF]/70 to-transparent sm:-left-8 sm:w-8" />
-					<div className="pointer-events-none absolute inset-y-1 -right-7 z-10 w-7 rounded-r-[18px] bg-gradient-to-l from-[#F5F3EF] via-[#F5F3EF]/70 to-transparent sm:-right-8 sm:w-8" />
+					<div className={`pointer-events-none absolute inset-y-1 left-10 z-10 w-6 rounded-l-[18px] bg-gradient-to-r from-[#F5F3EF] via-[#F5F3EF]/70 to-transparent transition-opacity duration-200 sm:left-12 sm:w-7 lg:left-14 lg:w-8 ${isAtStart ? 'opacity-0' : 'opacity-100'}`} />
+					<div className={`pointer-events-none absolute inset-y-1 right-10 z-10 w-6 rounded-r-[18px] bg-gradient-to-l from-[#F5F3EF] via-[#F5F3EF]/70 to-transparent transition-opacity duration-200 sm:right-12 sm:w-7 lg:right-14 lg:w-8 ${isAtEnd ? 'opacity-0' : 'opacity-100'}`} />
 
-					<div className="pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 sm:left-2 lg:left-3">
+					<div className="pointer-events-none absolute -left-2 top-1/2 z-20 -translate-y-1/2 sm:-left-3 lg:-left-4">
 						<button
 							type="button"
 							onClick={() => scrollCarousel('left')}
@@ -404,7 +391,7 @@ export function InstagramReelsSection({
 						</button>
 					</div>
 
-					<div className="pointer-events-none absolute right-1 top-1/2 z-20 -translate-y-1/2 sm:right-2 lg:right-3">
+					<div className="pointer-events-none absolute -right-2 top-1/2 z-20 -translate-y-1/2 sm:-right-3 lg:-right-4">
 						<button
 							type="button"
 							onClick={() => scrollCarousel('right')}
@@ -415,6 +402,10 @@ export function InstagramReelsSection({
 						</button>
 					</div>
 				</div>
+
+				<style>{`
+					.no-scrollbar::-webkit-scrollbar { display: none; }
+				`}</style>
 			</div>
 		</section>
 	);

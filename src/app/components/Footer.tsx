@@ -1,10 +1,5 @@
 import React from "react";
 import {
-  Instagram,
-  Facebook,
-  Twitter,
-  Youtube,
-  Music,
   Mail,
   Phone,
   MapPin,
@@ -12,6 +7,8 @@ import {
   Apple
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import instagramIcon from "../../../media/instagram.png";
+import tiktokIcon from "../../../media/tiktok.png";
 
 export function Footer() {
   const shopLinks = [
@@ -30,10 +27,8 @@ export function Footer() {
   ];
 
   const socialLinks = [
-    { Icon: Instagram, href: "https://www.instagram.com/justgoldcosmetics/", label: "Instagram" },
-    { Icon: Music, href: "https://www.tiktok.com/@justgoldcosmetics", label: "TikTok" },
-    // { Icon: Twitter, href: "https://www.twitter.com", label: "Twitter" },
-    // { Icon: Youtube, href: "https://www.youtube.com", label: "YouTube" },
+    { iconImage: instagramIcon, href: "https://www.instagram.com/justgoldcosmetics/", label: "Instagram" },
+    { iconImage: tiktokIcon, href: "https://www.tiktok.com/@just.gold.make.up", label: "TikTok" },
   ];
 
   return (
@@ -79,7 +74,7 @@ export function Footer() {
             {/* SOCIAL */}
             <div className="flex gap-4">
 
-              {socialLinks.map(({ Icon, href, label }) => (
+              {socialLinks.map(({ iconImage, href, label }) => (
                 <a
                   key={label}
                   href={href}
@@ -88,7 +83,14 @@ export function Footer() {
                   aria-label={label}
                   className="w-10 h-10 bg-white/70 backdrop-blur rounded-full flex items-center justify-center hover:bg-[#D4AF37] hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
                 >
-                  <Icon size={18} />
+                  <img
+                    src={iconImage}
+                    alt=""
+                    aria-hidden="true"
+                    className="w-[18px] h-[18px] object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </a>
               ))}
 

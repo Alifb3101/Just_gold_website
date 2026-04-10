@@ -10,9 +10,9 @@ const collections = [
     description: 'Radiant makeup for sun-kissed beauty'
   },
   {
-    name: 'Luxe Essentials',
+    name: 'Essentials Collection',
     productCount: 18,
-    image: 'https://i.postimg.cc/7LwP5gCH/imgi-166-Whats-App-Image2024-05-18at6-21-09PM-4472x.jpg',
+    image: 'https://res.cloudinary.com/dvagrhc2w/image/upload/v1775805487/esds_utaabg.jpg',
     description: 'Your everyday makeup must-haves'
   },
   {

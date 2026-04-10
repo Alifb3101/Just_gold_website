@@ -1,15 +1,22 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ChevronLeft, ChevronRight, Sparkles, Eye, Circle, Brush, Gift, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateSlug } from '@/app/utils/seo';
+import lipIcon from '../../../../media/lip.png';
+import eyeIcon from '../../../../media/eye.png';
+import faceIcon from '../../../../media/faec.png';
+import nailsIcon from '../../../../media/nails.png';
+import brushesIcon from '../../../../media/brushes.png';
+import makeupKitsIcon from '../../../../media/makeupkits.png';
+import bestSellerIcon from '../../../../media/best_seller.png';
 
 const categories = [
   {
     id: 6,
     name: 'Lips',
     routeSlug: 'lips',
-    icon: Circle,
+    iconImage: lipIcon,
     productCount: 24,
     image: 'https://i.postimg.cc/g05yt0pc/JG-Lip.jpg',
   },
@@ -17,7 +24,7 @@ const categories = [
     id: 5,
     name: 'Eyes',
     routeSlug: 'eyes',
-    icon: Eye,
+    iconImage: eyeIcon,
     productCount: 32,
     image: 'https://i.postimg.cc/6QGzXZYn/JG-Eye02.jpg',
   },
@@ -25,7 +32,7 @@ const categories = [
     id: 4,
     name: 'Face',
     routeSlug: 'face',
-    icon: Sparkles,
+    iconImage: faceIcon,
     productCount: 28,
     image: 'https://i.postimg.cc/vmj72mym/JG-face.jpg',
   },
@@ -33,7 +40,7 @@ const categories = [
     id: 43,
     name: 'Nails',
     routeSlug: 'nails',
-    icon: Sparkles,
+    iconImage: nailsIcon,
     productCount: 28,
     image: 'https://i.postimg.cc/YSVNDS7Q/JG_Nail.jpg',
   },
@@ -41,7 +48,7 @@ const categories = [
     id: 7,
     name: 'Brushes',
     routeSlug: 'tools-brushes',
-    icon: Brush,
+    iconImage: brushesIcon,
     productCount: 18,
     image: 'https://i.postimg.cc/5tG5KtJx/JG_Brush.jpg',
   },
@@ -49,7 +56,7 @@ const categories = [
     id: 8,
     name: 'Makeup Kits',
     routeSlug: 'makeupkits',
-    icon: Gift,
+    iconImage: makeupKitsIcon,
     productCount: 15,
     image: 'https://i.postimg.cc/fbKyk2HP/JG_Makeup_Kit.jpg',
   },
@@ -57,7 +64,7 @@ const categories = [
     id: 3,
     name: 'Best Sellers',
     routeSlug: 'best-seller',
-    icon: Star,
+    iconImage: bestSellerIcon,
     productCount: 20,
     image: 'https://i.postimg.cc/0NfjrWtB/JG_Bestseller.jpg',
   },
@@ -103,7 +110,6 @@ export function CategoryLinks() {
         >
           <div className="flex gap-2 sm:gap-4 md:gap-2 lg:gap-3 xl:gap-6 pb-6 pt-2 min-w-max  lg:justify-center">
             {categories.map((category, index) => {
-              const Icon = category.icon;
               return (
                 <motion.div
                   key={index}
@@ -132,8 +138,22 @@ export function CategoryLinks() {
                       {/* Category Info */}
                       <div className="h-[40%] flex flex-col items-center justify-center p-4 relative z-10">
                         {/* Icon */}
-                        <div className="mb-2 text-[#D4AF37]">
-                          <Icon className="w-6 h-6 md:w-8 md:h-8 stroke-[1.5]" />
+                        <div className="mb-2">
+                          <span
+                            role="img"
+                            aria-label={`${category.name} icon`}
+                            className="block w-6 h-6 md:w-8 md:h-8 bg-[#D4AF37]"
+                            style={{
+                              WebkitMaskImage: `url(${category.iconImage})`,
+                              WebkitMaskRepeat: 'no-repeat',
+                              WebkitMaskPosition: 'center',
+                              WebkitMaskSize: 'contain',
+                              maskImage: `url(${category.iconImage})`,
+                              maskRepeat: 'no-repeat',
+                              maskPosition: 'center',
+                              maskSize: 'contain',
+                            }}
+                          />
                         </div>
 
                         {/* Category Name */}
