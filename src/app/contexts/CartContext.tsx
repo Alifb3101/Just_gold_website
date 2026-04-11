@@ -14,6 +14,37 @@ import { useAuth } from './AuthContext';
 import { ApiError, ASSET_BASE_URL } from '@/app/api/http';
 import { getProductImage } from '@/app/utils/productImage';
 
+const CART_STORAGE_KEY = 'luxury_cosmetics_cart';
+
+const loadCartFromStorage = (): { items: CartItem[]; totals: CartTotals; promoCode: string | null; coupon: AppliedCoupon | null } | null => {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.warn('Failed to load cart from localStorage:', error);
+  }
+  return null;
+};
+
+const saveCartToStorage = (items: CartItem[], totals: CartTotals, promoCode: string | null, coupon: AppliedCoupon | null) => {
+  try {
+    const data = { items, totals, promoCode, coupon };
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to save cart to localStorage:', error);
+  }
+};
+
+const clearCartFromStorage = () => {
+  try {
+    localStorage.removeItem(CART_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to clear cart from localStorage:', error);
+  }
+};
+
 export interface CartItem {
   id: string;
   productId: string;
@@ -158,8 +189,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const quantitySyncTimersRef = React.useRef<Record<string, number>>({});
   const pendingQuantityRef = React.useRef<Record<string, number>>({});
   const inFlightOperationRef = React.useRef<Record<string, Promise<void>>>({});
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [totals, setTotals] = useState<CartTotals>({
+
+  // Load initial cart from localStorage
+  const initialCart = loadCartFromStorage();
+  const [items, setItems] = useState<CartItem[]>(initialCart?.items || []);
+  const [totals, setTotals] = useState<CartTotals>(initialCart?.totals || {
     subtotal: 0,
     items: 0,
     discount: 0,
@@ -169,8 +203,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     freeShippingRemaining: null,
     isFreeShipping: false,
   });
-  const [promoCode, setPromoCode] = useState<string | null>(null);
-  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  const [promoCode, setPromoCode] = useState<string | null>(initialCart?.promoCode || null);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(initialCart?.coupon || null);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
@@ -261,6 +295,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           }
         : null
     );
+    // Save to localStorage
+    saveCartToStorage(data.items.map(mapCartItem), {
+      subtotal: subtotalAmount,
+      items: Number(nextTotals.items ?? 0),
+      discount: discountAmount,
+      shipping: shippingAmount,
+      total: totalAmount,
+      currency: nextTotals.currency ?? 'AED',
+      freeShippingRemaining:
+        data.free_shipping_remaining ?? nextTotals.free_shipping_remaining ?? null,
+      isFreeShipping: Boolean(data.is_free_shipping ?? nextTotals.is_free_shipping ?? shippingAmount === 0),
+    }, data.coupon?.code ?? null, data.coupon ? {
+      code: data.coupon.code ?? null,
+      type: data.coupon.type ?? null,
+      value: data.coupon.value ?? null,
+      discount_amount: data.coupon.discount_amount ?? null,
+      max_discount_amount: data.coupon.max_discount_amount ?? null,
+    } : null);
     return true;
   }, []);
 
@@ -463,6 +515,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     setPromoCode(null);
     setCoupon(null);
+    clearCartFromStorage();
   }, [clearQuantitySyncTimer]);
 
   const applyPromoCode = useCallback(

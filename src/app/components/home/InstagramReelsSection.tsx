@@ -69,10 +69,10 @@ export const instagramReelsMockData: InstagramReelItem[] = [
     	{
 		id: 'reel-7',
 		video_url: 'https://zskzrnqtcbwkyhbwgnha.supabase.co/storage/v1/object/public/reels/bfb39a8e-d4b0-4940-8722-fc129eacec7a.mp4',
-		product_name: 'New Formula Foundation Stick & Concealer',
-		price: 'AED 40',
-		product_image: 'https://res.cloudinary.com/dvagrhc2w/image/upload/w_1400,f_auto,q_auto/just_gold/products/variants/osrzhczxxgjvpcts8ymd',
-		product_link: '/product/19-new-formula-foundation-stick--concealer',
+		product_name: ' Sculpt Pro Silky Bronzing Crème',
+		price: 'AED 30',
+		product_image: 'https://ik.imagekit.io/dvagrhc2w/just_gold/products/variants/01-Frappe.jpg?tr=w-1400,f-auto,q-auto',
+		product_link: '/product/128-sculpt-pro-silky-bronzing-crme',
 		instagram_link: 'https://www.instagram.com/reel/DWGwc95CFEu/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==',
 	},
 ];

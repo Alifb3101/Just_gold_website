@@ -130,7 +130,6 @@ export function ProductPage() {
       ),
     getNextPageParam: (lastPage) =>
       lastPage.hasMore && lastPage.nextCursor !== null ? lastPage.nextCursor : undefined,
-    placeholderData: (prev) => prev,
     staleTime: 5 * 60 * 1000,
   });
 
