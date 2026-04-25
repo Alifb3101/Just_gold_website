@@ -153,43 +153,9 @@ export function WebSiteSchema({ searchUrl }: WebSiteSchemaProps) {
   );
 }
 
-interface CategorySchemaProps {
-  name: string;
-  description: string;
-  url: string;
-  image?: string;
-}
-
-/**
- * Category/Collection JSON-LD Schema Component
- * Generates Schema.org CollectionPage structured data
- */
-export function CategorySchema({ name, description, url, image }: CategorySchemaProps) {
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name,
-    description,
-    url,
-    ...(image && { image }),
-    isPartOf: {
-      '@type': 'WebSite',
-      name: SEO_CONFIG.siteName,
-      url: SEO_CONFIG.siteUrl,
-    },
-  };
-
-  return (
-    <Helmet>
-      <script type="application/ld+json">{JSON.stringify(schema)}</script>
-    </Helmet>
-  );
-}
-
 export default {
   ProductSchema,
   BreadcrumbSchema,
   OrganizationSchema,
   WebSiteSchema,
-  CategorySchema,
 };

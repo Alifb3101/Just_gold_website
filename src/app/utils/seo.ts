@@ -52,6 +52,7 @@ export type BreadcrumbItem = {
  */
 export function generateTitle(pageTitle?: string): string {
   if (!pageTitle) return SEO_CONFIG.defaultTitle;
+  if (pageTitle.startsWith(SEO_CONFIG.siteName)) return pageTitle;
   return `${pageTitle} | ${SEO_CONFIG.siteName}`;
 }
 

@@ -4,13 +4,13 @@ import { SEOHead } from '@/app/components/seo';
 
 export function ShippingReturnsPage() {
   const highlights = [
-    { icon: <Truck className="w-5 h-5" />, title: "Express Shipping", desc: "Same-day delivery in Dubai on orders placed before 3 PM." },
+    { icon: <Truck className="w-5 h-5" />, title: "Express Shipping", desc: "Delivery in Dubai within 1-2 days on orders placed before 3 PM." },
     { icon: <ShieldCheck className="w-5 h-5" />, title: "Insured Parcels", desc: "Every order ships with full-value insurance and discreet packaging." },
     { icon: <Clock className="w-5 h-5" />, title: "Fast Processing", desc: "Orders dispatch within 24 hours on business days." },
   ];
 
   const returnSteps = [
-    "Submit a return request within 14 days of delivery.",
+    "Submit a return request within 7 days of delivery.",
     "Ensure items are unused, sealed, and in original packaging.",
     "We'll arrange a courier pickup or drop-off at a partner point.",
     "Refunds are processed within 5-7 business days once received.",
@@ -57,7 +57,7 @@ export function ShippingReturnsPage() {
               </div>
             </div>
             <ul className="space-y-3 text-sm text-[#5C5140]">
-              <li><strong className="text-[#2B2B2B]">Dubai & Abu Dhabi:</strong> Same-day or next-day delivery.</li>
+              <li><strong className="text-[#2B2B2B]">Dubai:</strong> Same-day or next-day delivery.</li>
               <li><strong className="text-[#2B2B2B]">Other Emirates:</strong> 1-3 business days with live tracking.</li>
               <li><strong className="text-[#2B2B2B]">GCC Shipping:</strong> 3-7 business days; duties calculated at checkout.</li>
               <li>Shipping is free on qualifying orders; see cart for thresholds.</li>

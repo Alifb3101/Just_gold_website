@@ -4,5 +4,4 @@ export {
   BreadcrumbSchema,
   OrganizationSchema,
   WebSiteSchema,
-  CategorySchema,
 } from './StructuredData';

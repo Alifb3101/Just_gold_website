@@ -1,13 +1,13 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useLocation, useParams } from 'react-router-dom';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/app/components/ui/sheet';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import { ProductGrid } from '@/app/components/shop/ProductGrid';
 import type { ProductCursorPage, ProductFilters, ProductSort } from '@/app/features/products/product-cursor-list.model';
 import { getProducts } from '@/services/productService';
-import { SEOHead, CategorySchema, BreadcrumbSchema } from '@/app/components/seo';
+import { SEOHead, BreadcrumbSchema } from '@/app/components/seo';
 import { SEO_CONFIG, generateSlug } from '@/app/utils/seo';
 import { useCategories } from '@/store/categoryStore';
 
@@ -125,11 +125,12 @@ export function ProductPage() {
           ...filters,
           search: filters.search,
           cursor: pageParam as number | null | undefined,
+          limit: PAGE_SIZE,
         },
         signal
       ),
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore && lastPage.nextCursor !== null ? lastPage.nextCursor : undefined,
+      lastPage.nextCursor != null ? lastPage.nextCursor : undefined,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -261,13 +262,6 @@ export function ProductPage() {
           'makeup',
         ].filter(Boolean)}
       />
-      {currentCategory && (
-        <CategorySchema
-          name={currentCategory.sub?.name || currentCategory.parent.name}
-          description={seoDescription}
-          url={`${SEO_CONFIG.siteUrl}${canonicalPath}`}
-        />
-      )}
       <BreadcrumbSchema items={breadcrumbItems} />
 
       <section className="hidden md:block max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-6">
@@ -353,6 +347,28 @@ export function ProductPage() {
               isFetchingNextPage={isFetchingNextPage}
               pageSize={PAGE_SIZE}
             />
+
+            {hasNextPage && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="flex items-center gap-2 px-8 py-3 bg-[#D4AF37] text-white rounded-lg font-semibold hover:bg-[#c4992f] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Load More Products
+                      <ChevronDown className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
 
             <div ref={loadMoreRef} className="h-10" aria-hidden />
           </div>

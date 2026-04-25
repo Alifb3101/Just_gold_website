@@ -4,9 +4,6 @@ import { CategoryLinks } from '@/app/components/home/CategoryLinks';
 import { BrandMarqueePage } from '@/app/components/home/BrandMarqueePage';
 import { SEOHead } from '@/app/components/seo';
 
-const FeaturedCollectionsLazy = React.lazy(() =>
-  import('@/app/components/home/FeaturedCollections').then((module) => ({ default: module.FeaturedCollections }))
-);
 const HomepageProductSectionsLazy = React.lazy(() =>
   import('@/app/components/home/HomepageProductSections').then((module) => ({ default: module.HomepageProductSections }))
 );
@@ -26,9 +23,10 @@ const NewsletterLazy = React.lazy(() =>
 export function HomePage() {
   return (
     <main>
+      <h1 className="sr-only">Just Gold Cosmetics</h1>
       {/* SEO Meta Tags */}
       <SEOHead
-        title="Premium Makeup & Cosmetics"
+        title="Just Gold Cosmetics - Premium Makeup & Cosmetics"
         description="Discover premium makeup and cosmetics from Just Gold Cosmetics. Shop high-end beauty essentials with free shipping."
         path="/"
         keywords={[
@@ -50,11 +48,6 @@ export function HomePage() {
 
       {/* Category Quick Links - Updated Compact Design */}
       <CategoryLinks />
-
-      {/* Featured Collections */}
-      <Suspense fallback={<div className="h-48 bg-[#FFF9F0]" />}>
-        <FeaturedCollectionsLazy />
-      </Suspense>
 
       {/* Dynamic Homepage Product Sections */}
       <Suspense fallback={<div className="h-72 bg-[#FFF9F0]" />}>

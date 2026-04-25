@@ -20,6 +20,7 @@ const toOptionalString = (value) => {
  * @param {string | null} [filters.size]
  * @param {import('@/app/features/products/product-cursor-list.model').ProductSort} [filters.sort]
  * @param {number | null} [filters.cursor]
+ * @param {number} [filters.limit]
  * @param {AbortSignal} [signal]
  */
 export async function getProducts(filters = {}, signal) {
@@ -33,6 +34,7 @@ export async function getProducts(filters = {}, signal) {
   const size = toOptionalString(filters.size);
   const sort = toOptionalString(filters.sort) ?? 'newest';
   const cursor = filters.cursor ?? null;
+  const limit = filters.limit ?? 20;
 
   if (category) params.set('category', category);
   if (search) params.set('search', search);
@@ -42,6 +44,7 @@ export async function getProducts(filters = {}, signal) {
   if (size) params.set('size', size);
   if (sort) params.set('sort', sort);
   if (cursor !== null) params.set('cursor', String(cursor));
+  params.set('limit', String(limit));
 
   const qs = params.toString();
   const url = `/products${qs ? `?${qs}` : ''}`;
@@ -50,14 +53,10 @@ export async function getProducts(filters = {}, signal) {
     console.debug('[products] fetch', url);
     const response = await fetchJson(url, { signal });
 
-    // Backend currently returns { page, limit, count, products: [...] } without cursor fields.
-    // Normalize into the cursor-based shape expected by the mapper.
-    const page = Number(response.page ?? 1);
-    const limit = Number(response.limit ?? (response.products?.length ?? 0));
-    const total = Number(response.count ?? 0);
-    const products = Array.isArray(response.products) ? response.products : [];
-    const hasMore = limit > 0 ? page * limit < total : false;
-    const nextCursor = hasMore ? page + 1 : null;
+    // API returns { data: [...], pagination: { hasMore, nextCursor } }
+    const products = Array.isArray(response.data) ? response.data : [];
+    const hasMore = response.pagination?.hasMore ?? false;
+    const nextCursor = response.pagination?.nextCursor ?? null;
 
     return mapApiProductCursorListResponse({
       products,
