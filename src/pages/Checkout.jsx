@@ -30,21 +30,40 @@ const UAE_EMIRATES = [
 
 const INITIAL_ADDRESS = {
   full_name: "",
-  phone: "",
+  phone: "+971 ",
   address_line_1: "",
   address_line_2: "",
   city: "",
   emirate: "",
 };
 
+/* ---------------- VALIDATION HELPERS ---------------- */
+
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isValidUAEPhone = (phone) => {
+  // UAE phone format: +971 XX XXX XXXX (with or without spaces)
+  const phoneRegex = /^\+971\s?\d{2}\s?\d{3}\s?\d{4}$/;
+  return phoneRegex.test(phone);
+};
+
 /* ---------------- VALIDATION ---------------- */
 
-const validateAddress = (address) => {
+const validateAddress = (address, isGuest = false, guestEmail = "") => {
   const next = {};
   if (!String(address.full_name).trim())
     next.full_name = "Full name is required.";
-  if (!String(address.phone).trim())
+  
+  // Phone validation with +971 prefix
+  const phone = String(address.phone).trim();
+  if (!phone)
     next.phone = "Phone number is required.";
+  else if (!isValidUAEPhone(phone))
+    next.phone = "Wrong format. Please enter UAE mobile: 50 XXX XXXX (e.g., 50 123 4567)";
+  
   if (!String(address.address_line_1).trim())
     next.address_line_1 = "Address line 1 is required.";
   if (!String(address.city).trim())
@@ -54,6 +73,16 @@ const validateAddress = (address) => {
   } else if (!UAE_EMIRATES.includes(address.emirate)) {
     next.emirate = "Please select a valid emirate.";
   }
+  
+  // Guest email validation
+  if (isGuest) {
+    const email = String(guestEmail).trim();
+    if (!email)
+      next.guest_email = "Email is required for order confirmation.";
+    else if (!isValidEmail(email))
+      next.guest_email = "Invalid email format. Please use: yourname@example.com";
+  }
+  
   return next;
 };
 
@@ -151,6 +180,7 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
+    setIsEntering(true);
     if (errors.guest_email && guestEmail.trim()) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -210,10 +240,7 @@ export default function Checkout() {
     }
 
     if (!selectedAddressId) {
-      const nextErrors = validateAddress(address);
-      if (isGuest && !guestEmail.trim()) {
-        nextErrors.guest_email = "Email is required.";
-      }
+      const nextErrors = validateAddress(address, isGuest, guestEmail);
       setErrors(nextErrors);
       if (Object.keys(nextErrors).length > 0) {
         toast.error("Please complete required fields.");
@@ -360,7 +387,7 @@ export default function Checkout() {
                         errors.guest_email
                           ? "border-red-400 focus:ring-red-400"
                           : "border-[#E5DCC5] focus:ring-[#D4AF37]"
-                      } focus:ring-2 bg-white focus:outline-none`}
+                      } focus:ring-2 bg-white focus:outline-none lowercase`}
                     />
                     {errors.guest_email && (
                       <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
@@ -550,24 +577,31 @@ function AddressForm({ values, errors, onChange }) {
             <Phone size={14} className="text-[#D4AF37]" />
             Phone Number
           </label>
-          <input
-            type="tel"
-            value={values.phone}
-            onChange={(e) => onChange("phone", e.target.value)}
-            className={`w-full rounded-lg px-4 py-3 border-2 transition duration-200 ${
+          <div className={`flex rounded-lg border-2 transition duration-200 ${
               errors.phone
-                ? "border-red-400 focus:ring-2 focus:ring-red-200"
-                : "border-[#E5DCC5] focus:ring-2 focus:ring-[#D4AF37]/30"
-            } bg-gradient-to-b from-white to-[#FFFBF0] focus:outline-none font-medium`}
-            placeholder="+971 50 XXX XXXX"
-          />
+                ? "border-red-400 focus-within:ring-2 focus-within:ring-red-200"
+                : "border-[#E5DCC5] focus-within:ring-2 focus-within:ring-[#D4AF37]/30"
+            } bg-gradient-to-b from-white to-[#FFFBF0]`}>
+            <span className="px-3 py-3 bg-[#F5F0E8] text-[#7A6B50] font-semibold border-r border-[#E5DCC5] select-none">
+              +971
+            </span>
+            <input
+              type="tel"
+              value={values.phone.replace(/^\+971\s?/, '')}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+                onChange("phone", `+971 ${digits}`);
+              }}
+              className="flex-1 px-3 py-3 bg-transparent focus:outline-none font-medium"
+              placeholder="50 XXX XXXX"
+            />
+          </div>
           {errors.phone && (
             <p className="text-red-500 text-xs mt-2 flex items-center gap-1 font-medium">
               <span>•</span> {errors.phone}
             </p>
           )}
         </div>
-
 
         <div className="md:col-span-2">
           <label className="flex items-center gap-2 text-sm font-bold text-[#3E2723] mb-3 uppercase tracking-wider">

@@ -101,8 +101,7 @@ export function TrackOrderPage() {
 
     try {
       const response = await apiFetch<TrackOrderResponse>(
-        `
-         /orders/track?order_number=${encodeURIComponent(orderId.trim())}&email=${encodeURIComponent(email.trim())}`
+        `/orders/track?order_number=${encodeURIComponent(orderId.trim())}&email=${encodeURIComponent(email.trim())}`
       );
       
       if (response.success && response.data) {
