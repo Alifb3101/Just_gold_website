@@ -1,18 +1,48 @@
 import React, { useState } from 'react';
 import { Mail, Check, Lock, Truck, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
+import { ApiError } from '@/app/api/http';
+import { subscribeToNewsletter } from '@/services/newsletterService';
 
 export function Newsletter() {
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState('');
+  const [submitError, setSubmitError] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setIsSubmitted(false);
+    setSubmitError(false);
+    setSubmitMessage('');
+    setIsSubmitting(true);
+
+    try {
+      const response = await subscribeToNewsletter({ email });
+      setIsSubmitted(true);
+      setSubmitMessage(response.message || 'Subscribed successfully');
       setEmail('');
-    }, 3000);
+
+      setTimeout(() => {
+        setIsSubmitted(false);
+      }, 3000);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          setSubmitMessage('Email is already subscribed');
+        } else if (err.status === 400) {
+          setSubmitMessage('Invalid request body');
+        } else {
+          setSubmitMessage(err.message || 'Unable to subscribe right now. Please try again.');
+        }
+      } else {
+        setSubmitMessage((err as Error)?.message || 'Unable to subscribe right now. Please try again.');
+      }
+      setSubmitError(true);
+      setIsSubmitted(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -57,15 +87,21 @@ export function Newsletter() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
                 required
-                className="w-full pl-12 pr-4 py-4 rounded-full border-2 border-[#D4AF37]/30 focus:border-[#D4AF37] outline-none transition-colors bg-white"
+                className={`w-full pl-12 pr-4 py-4 rounded-full border-2 outline-none transition-colors bg-white ${
+                  submitError
+                    ? 'border-red-400 focus:border-red-500'
+                    : 'border-[#D4AF37]/30 focus:border-[#D4AF37]'
+                }`}
               />
             </div>
             <button
               type="submit"
-              disabled={isSubmitted}
+              disabled={isSubmitted || isSubmitting}
               className={`px-8 py-4 rounded-full font-semibold transition-all duration-300 ${
                 isSubmitted
                   ? 'bg-green-500 text-white'
+                  : isSubmitting
+                  ? 'bg-[#D4AF37]/80 text-white cursor-not-allowed'
                   : 'bg-[#D4AF37] text-white hover:bg-[#C9B037] hover:shadow-lg'
               }`}
             >
@@ -74,11 +110,23 @@ export function Newsletter() {
                   <Check className="w-5 h-5" />
                   Subscribed!
                 </span>
+              ) : isSubmitting ? (
+                'Subscribing...'
               ) : (
                 'Subscribe'
               )}
             </button>
           </motion.form>
+
+          {submitMessage ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className={`mb-6 text-sm font-medium ${submitError ? 'text-red-600' : 'text-green-700'}`}
+            >
+              {submitMessage}
+            </p>
+          ) : null}
 
           {/* Trust Badges */}
           <motion.div
