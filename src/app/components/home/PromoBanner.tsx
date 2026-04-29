@@ -1,6 +1,9 @@
 import React from 'react';
 import { ArrowRight, Gift, Tag } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
+
+const MotionLink = motion(Link);
 
 export function PromoBanner() {
   return (
@@ -8,12 +11,13 @@ export function PromoBanner() {
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-2 gap-6">
           {/* Left Banner - Makeup Kits Discount */}
-          <motion.div
+          <MotionLink
+            to="/category/makeupkits"
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="group relative h-[400px] rounded-2xl overflow-hidden cursor-pointer"
+            className="group relative block h-[400px] rounded-2xl overflow-hidden cursor-pointer"
           >
             <img
               src="https://images.unsplash.com/photo-1602532386405-9f3cce79a00b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800"
@@ -38,22 +42,23 @@ export function PromoBanner() {
               <p className="text-white/90 mb-6 max-w-sm">
                 Complete your look with our curated makeup kits
               </p>
-              <button className="flex items-center gap-2 text-white group-hover:text-[#D4AF37] transition-colors w-fit">
+              <span className="flex items-center gap-2 text-white group-hover:text-[#D4AF37] transition-colors w-fit">
                 <span className="font-semibold">Shop Kits</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </span>
             </div>
 
             <div className="absolute inset-0 border-2 border-transparent group-hover:border-[#D4AF37] transition-all duration-300 rounded-2xl" />
-          </motion.div>
+          </MotionLink>
 
           {/* Right Banner - Free Gift */}
-          <motion.div
+          <MotionLink
+            to="/category/gift-sets"
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="group relative h-[400px] rounded-2xl overflow-hidden cursor-pointer"
+            className="group relative block h-[400px] rounded-2xl overflow-hidden cursor-pointer"
           >
             <img
               src="https://images.unsplash.com/photo-1759563876829-47c081a2afd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800"
@@ -78,14 +83,14 @@ export function PromoBanner() {
               <p className="text-white/90 mb-6 max-w-sm">
                 Spend AED 300 or more and receive a luxury gift
               </p>
-              <button className="flex items-center gap-2 text-white group-hover:text-[#D4AF37] transition-colors">
+              <span className="flex items-center gap-2 text-white group-hover:text-[#D4AF37] transition-colors">
                 <span className="font-semibold">Learn More</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </span>
             </div>
 
             <div className="absolute inset-0 border-2 border-transparent group-hover:border-[#D4AF37] transition-all duration-300 rounded-2xl" />
-          </motion.div>
+          </MotionLink>
         </div>
       </div>
     </section>
