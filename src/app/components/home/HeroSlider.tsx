@@ -11,7 +11,7 @@ interface Slide {
 
 const slides: Slide[] = [
     { id: 1, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890031/JG-Mascara_WebBanner.jpg_as4e2u.jpg" },
-  { id: 2, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890032/JG-UniqueSingleBlushWebPoster.jpg_d52vur.jpg" },
+  { id: 2, image: "https://i.postimg.cc/0NNXNz4S/SC.jpg" },
   // { id: 3, image: "https://i.postimg.cc/66VBWBDJ/JH-ll-jpg.jpg" },
   { id: 3, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890030/JG-SkinFit-Web-banner.jpg_z2tdrr.jpg" },
 ];

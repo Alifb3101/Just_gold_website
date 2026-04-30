@@ -28,7 +28,7 @@ const DEFAULT_FILTERS: ProductFilters = {
 };
 
 const VALID_SORTS: ProductSort[] = ['newest', 'popular', 'price_low', 'price_high'];
-const DEFAULT_SHOP_BANNER_IMAGE_URL = 'https://i.postimg.cc/yYTcSCZj/Liquid-Highlighter.jpg';
+const DEFAULT_SHOP_BANNER_IMAGE_URL = 'https://i.postimg.cc/6q7VbWVt/EYE-WEB.jpg';
 
 // Add category-level banner URLs here (key = parent category id)
 const SHOP_BANNER_BY_PARENT_CATEGORY_ID: Record<number, string> = {
@@ -39,6 +39,30 @@ const SHOP_BANNER_BY_PARENT_CATEGORY_ID: Record<number, string> = {
 const SHOP_BANNER_BY_SUBCATEGORY_ID: Record<number, string> = {
   // 12: 'https://your-cdn.com/eyeliner-sub-banner.jpg',
 };
+
+// Build variant urls by inserting a suffix before the file extension.
+// Example: /images/banner.jpg -> /images/banner-mobile.jpg
+function deriveBannerUrl(baseUrl: string, variant: 'mobile' | 'tablet' | 'desktop') {
+  try {
+    const url = new URL(baseUrl, window?.location?.origin ?? '');
+    const pathname = url.pathname;
+    const idx = pathname.lastIndexOf('.');
+    if (idx === -1) return baseUrl;
+    const name = pathname.slice(0, idx);
+    const ext = pathname.slice(idx); // includes dot
+    const variantName = `${name}-${variant}${ext}`;
+    url.pathname = variantName;
+    return url.toString();
+  } catch (e) {
+    // If URL parsing fails (e.g., relative paths), fall back to string manipulation
+    const match = baseUrl.match(/^(.*)(\.[^.?#]+)([?#].*)?$/);
+    if (!match) return baseUrl;
+    const prefix = match[1];
+    const ext = match[2];
+    const suffix = match[3] ?? '';
+    return `${prefix}-${variant}${ext}${suffix}`;
+  }
+}
 
 function serializeFilters(filters: ProductFilters) {
   return {
@@ -266,17 +290,29 @@ export function ProductPage() {
 
       <section className="hidden md:block max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-6">
         <div
-          className="relative overflow-hidden rounded-2xl md:rounded-3xl border border-[#EADBC2] shadow-[0_18px_44px_rgba(62,39,35,0.14)] aspect-[5/1] min-h-[96px] sm:aspect-[11/2] sm:min-h-[112px] md:aspect-[6/1] md:min-h-[128px] lg:aspect-[3196/525] lg:min-h-0"
+          className="relative overflow-hidden rounded-2xl md:rounded-3xl border border-[#EADBC2] shadow-[0_18px_44px_rgba(62,39,35,0.14)] aspect-[3/1] sm:aspect-[3/1] md:aspect-[6/1] md:min-h-[128px] lg:aspect-[6/1] lg:min-h-0"
         >
           {currentBannerImageUrl ? (
+            // Responsive banner: 3 source sizes (mobile/tablet/desktop)
             <div className="absolute inset-0 flex items-center justify-center px-3 sm:px-4 md:px-5 lg:px-0">
+              {/**
+               * Variant naming convention: insert suffix before file extension.
+               * Example: /images/banner.jpg -> /images/banner-mobile.jpg
+               * If your CDN uses different names, replace the helper or provide explicit URLs.
+               */}
               <img
-                src={currentBannerImageUrl}
+                src={deriveBannerUrl(currentBannerImageUrl, 'desktop')}
+                srcSet={
+                  `${deriveBannerUrl(currentBannerImageUrl, 'mobile')} 750w, ${deriveBannerUrl(
+                    currentBannerImageUrl,
+                    'tablet'
+                  )} 1280w, ${deriveBannerUrl(currentBannerImageUrl, 'desktop')} 1920w`
+                }
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1920px"
                 alt="Shop banner"
-                className="h-full w-auto max-w-[88%] sm:max-w-[90%] md:max-w-[92%] lg:max-w-none object-contain lg:object-cover object-center"
+                className="h-full w-full max-w-none object-cover object-center"
                 loading="eager"
                 decoding="async"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1920px"
                 {...({ fetchpriority: 'high' } as Record<string, string>)}
               />
             </div>
@@ -287,12 +323,7 @@ export function ProductPage() {
 
           <div className="relative z-10 hidden lg:flex h-full items-center justify-between px-4 sm:px-6 md:px-7 lg:px-12 gap-3">
             <div className="max-w-[82%] sm:max-w-[72%]">
-              <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.2em] text-[#FFF7E8] font-semibold mb-1 sm:mb-2">
-                Explore Our Premium products
-              </p>
-              <h1 className="text-white font-black text-[17px] sm:text-2xl md:text-3xl lg:text-4xl leading-[1.06] drop-shadow-[0_1px_4px_rgba(0,0,0,0.22)] line-clamp-2">
-                {currentCategory?.sub?.name || currentCategory?.parent?.name || 'Shop Premium Cosmetics'}
-              </h1>
+      
 
             </div>
             <div className="shrink-0 text-right">

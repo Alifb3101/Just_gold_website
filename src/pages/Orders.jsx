@@ -201,28 +201,55 @@ export default function Orders() {
                       {order.items.map((item, index) => (
                         <div
                           key={index}
-                          className="flex flex-col md:flex-row gap-4 border rounded-xl p-4"
+                          className="grid gap-4 rounded-2xl border border-[#E7DBC2] bg-[#FFFCF7] p-4 shadow-sm md:grid-cols-[96px_minmax(0,1fr)_auto] md:items-center md:p-5"
                         >
-                          <img
-                            src={item.thumbnail}
-                            alt={item.name}
-                            className="w-24 h-24 object-cover rounded-lg"
-                          />
+                          <div className="flex items-start gap-4 md:contents">
+                            <img
+                              src={item.thumbnail}
+                              alt={item.name}
+                              className="h-24 w-24 rounded-xl object-cover ring-1 ring-[#D4AF37]/15 md:h-[96px] md:w-[96px]"
+                            />
 
-                          <div className="flex-1">
-                            <p className="font-semibold text-[#2C1F1B]">
-                              {item.name}
-                            </p>
-                            <p className="text-sm text-[#6B4A3A]">
-                              SKU: {item.sku}
-                            </p>
-                            <p className="text-sm text-[#6B4A3A]">
-                              Qty: {item.quantity}
-                            </p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-base font-semibold text-[#2C1F1B] leading-snug">
+                                {item.name}
+                              </p>
+
+                              <div className="mt-3 grid gap-2 text-sm text-[#6B4A3A] sm:grid-cols-2">
+                                <div>
+                                  <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B08938]">
+                                    Product Model No
+                                  </span>
+                                  <span className="mt-0.5 block break-words text-[#2C1F1B]">
+                                    {item.sku || "-"}
+                                  </span>
+                                </div>
+
+                                {(item.variant?.name || item.variantModelNo) && (
+                                  <div>
+                                    <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B08938]">
+                                      Variant Model No
+                                    </span>
+                                    <span className="mt-0.5 block break-words text-[#2C1F1B]">
+                                      {item.variant?.name || item.variantModelNo}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div>
+                                  <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B08938]">
+                                    Qty
+                                  </span>
+                                  <span className="mt-0.5 block text-[#2C1F1B]">
+                                    {item.quantity}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="text-right">
-                            <p className="font-semibold">
+                          <div className="md:text-right md:self-start">
+                            <p className="text-lg font-semibold text-[#2C1F1B] md:pt-1">
                               {order.pricing.currency} {item.total_price}
                             </p>
                           </div>
