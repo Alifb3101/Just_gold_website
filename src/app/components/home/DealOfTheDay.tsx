@@ -233,7 +233,7 @@ export function DealOfTheDay() {
 									Exclusive Offer
 								</p>
 								<h2 className="mt-4 text-4xl lg:text-5xl font-bold leading-tight bg-gradient-to-r from-black via-yellow-600 to-black bg-[length:200%] bg-clip-text text-transparent">
-									Deal of the Day
+									Deal of the Week
 								</h2>
 								<h3 className="mt-4 text-2xl lg:text-3xl font-semibold text-black">
 									{dealProduct.name}

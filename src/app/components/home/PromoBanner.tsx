@@ -75,7 +75,7 @@ export function PromoBanner() {
                 </span>
               </div>
               <h3 className="font-['Playfair_Display'] text-3xl md:text-4xl font-bold text-white mb-3">
-                Free Gift
+                Free Gift Set
               </h3>
               <p className="text-2xl font-bold text-[#D4AF37] mb-2">
                 With Purchase

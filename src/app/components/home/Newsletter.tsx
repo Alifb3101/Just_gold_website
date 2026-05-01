@@ -62,8 +62,8 @@ export function Newsletter() {
             <span className="inline-block px-4 py-1 bg-[#D4AF37] text-white text-xs font-semibold tracking-wider rounded-full mb-4">
               EXCLUSIVE OFFER
             </span>
-            <h2 className="font-['Playfair_Display'] text-4xl md:text-5xl font-bold text-[#3E2723] mb-4">
-              Get 15% Off Your First Order
+            <h2 className="font-['Playfair_Display'] text-4xl md:text-4xl font-bold text-[#3E2723] mb-4">
+              Get 10% Off On Your First Order
             </h2>
             <p className="text-[#4A4A4A] text-lg mb-8">
               Join our exclusive community and be the first to know about new launches, special offers, and beauty tips
