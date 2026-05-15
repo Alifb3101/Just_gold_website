@@ -17,7 +17,7 @@ const slides: Slide[] = [
       name: "like-a-pro-mascara"},
   { id: 36, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/v1777641133/SC_eomey1.jpg", name: "skin-corrector" },
   // { id: 3, image: "https://i.postimg.cc/66VBWBDJ/JH-ll-jpg.jpg" },
-  { id: 129, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/w_auto,dpr_auto,f_auto,q_auto/v1774890030/JG-SkinFit-Web-banner.jpg_z2tdrr.jpg", name: "skin-gloss-liquid-illuminator" },
+  { id: 92, image: "https://res.cloudinary.com/dvagrhc2w/image/upload/v1778828408/JG-WebFacepowder-0_rhjmvg.jpg", name: "justgold-face-powder" },
 ];
 
 export function HeroSlider() {
